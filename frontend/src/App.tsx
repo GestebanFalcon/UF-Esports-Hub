@@ -1,0 +1,327 @@
+import { useState, type FormEvent } from "react";
+import { loginSchema, registerSchema } from "@uf-esports-hub/shared";
+import "./index.css";
+
+function Arrow({ back = false }: { back?: boolean }) {
+  return <span aria-hidden="true">{back ? "↗" : "→"}</span>;
+}
+
+function Brand() {
+  return (
+    <a className="brand" href="/" aria-label="UF Esports Hub home">
+      <span className="brand-mark" aria-hidden="true">
+        UF
+        <span />
+      </span>
+      <span>
+        ESPORTS<span className="brand-subtitle">UNIVERSITY OF FLORIDA</span>
+      </span>
+    </a>
+  );
+}
+
+function AuthPage({ mode }: { mode: "login" | "register" }) {
+  const isLogin = mode === "login";
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [message, setMessage] = useState("");
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMessage("");
+    const result = (isLogin ? loginSchema : registerSchema).safeParse(
+      Object.fromEntries(new FormData(event.currentTarget)),
+    );
+    if (!result.success) {
+      const nextErrors: Record<string, string> = {};
+      for (const issue of result.error.issues) {
+        const field = String(issue.path[0]);
+        nextErrors[field] ??= issue.message;
+      }
+      setErrors(nextErrors);
+      const firstField = Object.keys(nextErrors)[0];
+      if (firstField)
+        event.currentTarget
+          .querySelector<HTMLInputElement>(`[name="${firstField}"]`)
+          ?.focus();
+      return;
+    }
+    setErrors({});
+    setMessage(
+      isLogin
+        ? "Your details are valid. Sign-in is coming soon — you have not been signed in."
+        : "Your details are valid. Account creation is coming soon — no account has been created yet.",
+    );
+  }
+
+  return (
+    <main className="register-layout">
+      <section className="register-intro">
+        <a className="back-link" href="/">
+          ← Back to home
+        </a>
+        <div className="intro-copy">
+          <p className="eyebrow">
+            <span /> {isLogin ? "BACK IN THE GAME" : "YOUR NEXT CHAPTER"}
+          </p>
+          <h1>
+            {isLogin ? "Your community." : "Every team"}
+            <br /> {isLogin ? "Your game." : "starts with"}
+            <br /> <span>{isLogin ? "Welcome back." : "one player."}</span>
+          </h1>
+          <p className="intro-description">
+            {isLogin
+              ? "Good to see you again. Make your next move."
+              : "Make your place in the UF esports community."}
+          </p>
+        </div>
+        <div className="intro-bottom">
+          <span className="small-cross">+</span>
+          <span>ONE CAMPUS. EVERY GAME.</span>
+          <span>01 / 01</span>
+        </div>
+      </section>
+      <section className="form-panel" aria-labelledby="auth-title">
+        <div className="form-heading">
+          <span className="section-number">
+            {isLogin ? "02 — WELCOME BACK" : "01 — JOIN THE HUB"}
+          </span>
+          <h2 id="auth-title">
+            {isLogin ? "Log in to the hub" : "Create your account"}
+            <span>.</span>
+          </h2>
+          <p>
+            {isLogin
+              ? "Pick up where you left off."
+              : "Your community. Your next team. Start here."}
+          </p>
+        </div>
+        <form onSubmit={submit} noValidate>
+          {!isLogin && (
+            <div className="field">
+              <label htmlFor="username">Username</label>
+              <input
+                id="username"
+                name="username"
+                placeholder="Your in-game name"
+                autoComplete="username"
+                required
+                aria-invalid={!!errors.username}
+                aria-describedby={
+                  errors.username ? "username-error" : undefined
+                }
+              />
+              {errors.username && (
+                <p className="field-error" id="username-error">
+                  {errors.username}
+                </p>
+              )}
+            </div>
+          )}
+          <div className="field">
+            <label htmlFor="email">Email address</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="you@ufl.edu"
+              autoComplete={isLogin ? "username" : "email"}
+              required
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? "email-error" : undefined}
+            />
+            {errors.email && (
+              <p className="field-error" id="email-error">
+                {errors.email}
+              </p>
+            )}
+          </div>
+          <div className="field">
+            <label htmlFor="password">Password</label>
+            <div className="password-input">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                placeholder={
+                  isLogin ? "Enter your password" : "Create a password"
+                }
+                autoComplete={isLogin ? "current-password" : "new-password"}
+                required
+                minLength={isLogin ? undefined : 8}
+                aria-invalid={!!errors.password}
+                aria-describedby={
+                  errors.password
+                    ? "password-error"
+                    : isLogin
+                      ? undefined
+                      : "password-hint"
+                }
+              />
+              <button
+                className="visibility-toggle"
+                type="button"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+            {errors.password ? (
+              <p className="field-error" id="password-error">
+                {errors.password}
+              </p>
+            ) : !isLogin ? (
+              <p className="field-hint" id="password-hint">
+                Use at least 8 characters.
+              </p>
+            ) : null}
+          </div>
+          {!isLogin && (
+            <div className="field">
+              <label htmlFor="confirmPassword">Confirm password</label>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password again"
+                autoComplete="new-password"
+                required
+                aria-invalid={!!errors.confirmPassword}
+                aria-describedby={
+                  errors.confirmPassword ? "confirmPassword-error" : undefined
+                }
+              />
+              {errors.confirmPassword && (
+                <p className="field-error" id="confirmPassword-error">
+                  {errors.confirmPassword}
+                </p>
+              )}
+            </div>
+          )}
+          <button className="button primary submit-button" type="submit">
+            {isLogin ? "Log in" : "Create account"} <Arrow />
+          </button>
+          <p className="form-note">
+            {isLogin
+              ? "Login preview. Sign-in will be available soon."
+              : "Registration preview. Account creation will be available soon."}
+          </p>
+          <p className="form-status" role="status">
+            {message}
+          </p>
+        </form>
+        <p className="auth-switch">
+          {isLogin ? "New to the hub?" : "Already part of the community?"}{" "}
+          <a href={isLogin ? "/register" : "/login"}>
+            {isLogin ? "Create an account" : "Log in"} <Arrow />
+          </a>
+        </p>
+      </section>
+    </main>
+  );
+}
+
+function Landing() {
+  return (
+    <main className="landing">
+      <div className="hero-topline">
+        <span className="eyebrow">
+          <span /> THE UF ESPORTS HUB
+        </span>
+        <span className="hero-edition">GAINESVILLE, FL / EST. AT UF</span>
+      </div>
+      <section className="hero">
+        <p className="hero-kicker">BUILT FOR THE GATOR IN YOU.</p>
+        <h1>
+          Find your people.
+          <br />
+          <span>Play your game.</span>
+        </h1>
+        <p className="hero-description">
+          A home for the UF esports community.
+          <br />
+          Your next chapter starts here.
+        </p>
+        <a className="button primary" href="/register">
+          Join the hub <Arrow />
+        </a>
+        <div className="hero-art" aria-hidden="true">
+          <div className="art-line line-one" />
+          <div className="art-line line-two" />
+          <div className="art-line line-three" />
+          <span>UF</span>
+          <div className="art-caption">ESPORTS / FLORIDA</div>
+        </div>
+      </section>
+      <div className="landing-bottom">
+        <span className="small-cross">+</span>
+        <span>ONE CAMPUS. EVERY GAME.</span>
+        <a href="/register">
+          YOUR PLACE STARTS HERE <Arrow back />
+        </a>
+      </div>
+    </main>
+  );
+}
+
+export function App() {
+  const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
+  const isRegister = pathname === "/register";
+  const isLogin = pathname === "/login";
+  return (
+    <div className="site-shell">
+      <header className="site-header">
+        <Brand />
+        <nav aria-label="Main navigation">
+          <a
+            className={
+              !isRegister && pathname === "/" ? "nav-link active" : "nav-link"
+            }
+            aria-current={pathname === "/" ? "page" : undefined}
+            href="/"
+          >
+            Home
+          </a>
+          <a
+            className={isLogin ? "nav-link active" : "nav-link"}
+            href="/login"
+            aria-current={isLogin ? "page" : undefined}
+          >
+            Log in
+          </a>
+          <a
+            className="nav-register"
+            href="/register"
+            aria-current={isRegister ? "page" : undefined}
+          >
+            Join the hub <Arrow back />
+          </a>
+        </nav>
+      </header>
+      {isRegister || isLogin ? (
+        <AuthPage key={pathname} mode={isLogin ? "login" : "register"} />
+      ) : pathname === "/" ? (
+        <Landing />
+      ) : (
+        <main className="not-found">
+          <p className="eyebrow">404 / OUT OF BOUNDS</p>
+          <h1>This page isn’t in play.</h1>
+          <a className="button primary" href="/">
+            Back to home <Arrow />
+          </a>
+        </main>
+      )}
+      <footer className="site-footer">
+        <span>UF ESPORTS HUB</span>
+        <span>Made for the game. Built for the community.</span>
+        <span>
+          GO GATORS <span className="blue-dot">●</span>
+        </span>
+      </footer>
+    </div>
+  );
+}
+
+export default App;
