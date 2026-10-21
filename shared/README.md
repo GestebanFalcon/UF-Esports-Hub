@@ -23,3 +23,19 @@ const user: User = userSchema.parse(await responseFromApi.json());
 `NewUser` remains inferred from Drizzle in the backend because database defaults make insert fields optional. Profile and membership fields can be added later. No database migration is required by this package.
 
 Run `bun run test` for validation and serialization tests. Schema APIs follow the [Zod documentation](https://zod.dev/api).
+
+## Authentication contracts
+
+All exports below are available from `@uf-esports-hub/shared`; their types are inferred from Zod.
+
+| Schema | Type | Purpose |
+| --- | --- | --- |
+| `registerSchema` | `RegisterInput` | Registration form with password confirmation |
+| `registerRequestSchema` | `RegisterRequest` | Username, email, password; strips confirmation and unknown fields |
+| `loginSchema` | `LoginInput` | Email and nonempty password for the login form |
+| `loginRequestSchema` | `LoginRequest` | Login API body, same shape as the form |
+| `registerResponseSchema` | `RegisterResponse` | Registration success body containing a public `user` |
+| `loginResponseSchema` | `LoginResponse` | Login success body containing a public `user` |
+| `authErrorSchema` | `AuthError` | Error `message` and optional `fieldErrors` |
+
+Registration requires at least eight password characters. Login only requires a nonempty password so it can accept existing credentials without applying a new-account policy. Neither schema trims or changes passwords. The frontend currently previews these flows; backend authentication endpoints and session handling are not implemented.

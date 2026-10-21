@@ -1,8 +1,11 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 const userIdentity = {
   id: z.uuid(),
-  username: z.string().min(1).refine((value) => value.trim().length > 0, 'Username is required'),
+  username: z
+    .string()
+    .min(1)
+    .refine((value) => value.trim().length > 0, "Username is required"),
   email: z.email(),
 };
 
