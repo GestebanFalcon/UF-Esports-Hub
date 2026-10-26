@@ -7,10 +7,12 @@ import {
   type UserRecord,
 } from "../src/index";
 
+
 const record: UserRecord = {
   id: "b48653da-1234-4567-89ab-123456789abc",
   username: "GatorPlayer",
   email: "player@ufl.edu",
+  role: "player",
   hashedPassword: "already-hashed-value",
   createdAt: new Date("2026-10-20T12:00:00.000Z"),
   updatedAt: new Date("2026-10-20T12:00:00.000Z"),

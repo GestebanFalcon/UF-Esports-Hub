@@ -51,6 +51,7 @@ test("auth responses validate the public user and remove hashes", () => {
       id: "b48653da-1234-4567-89ab-123456789abc",
       username: "Gator",
       email: "player@ufl.edu",
+      role: "player",
       createdAt: "2026-10-20T12:00:00.000Z",
       updatedAt: "2026-10-20T12:00:00.000Z",
       hashedPassword: "secret",

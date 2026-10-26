@@ -1,4 +1,7 @@
-import { z } from "zod";
+﻿import { z } from "zod";
+
+export const userRoles = ["player", "manager", "admin"] as const;
+export type UserRole = (typeof userRoles)[number];
 
 const userIdentity = {
   id: z.uuid(),
@@ -12,6 +15,7 @@ const userIdentity = {
 /** User data sent over JSON. Unknown fields (including password hashes) are stripped. */
 export const userSchema = z.object({
   ...userIdentity,
+  role: z.enum(userRoles),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 });
@@ -21,6 +25,7 @@ export type User = z.infer<typeof userSchema>;
 /** Internal database row; never return this directly from an API. */
 export const userRecordSchema = z.object({
   ...userIdentity,
+  role: z.enum(userRoles),
   hashedPassword: z.string().min(1),
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -34,6 +39,7 @@ export function toUser(record: UserRecord): User {
     id: record.id,
     username: record.username,
     email: record.email,
+    role: record.role,
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
   });

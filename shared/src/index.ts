@@ -1,5 +1,5 @@
-export { userSchema, userRecordSchema, toUser } from "./user.js";
-export type { User, UserRecord } from "./user.js";
+export { userSchema, userRecordSchema, toUser, userRoles } from "./user.js";
+export type { User, UserRecord, UserRole } from "./user.js";
 export {
   registerSchema,
   registerRequestSchema,
