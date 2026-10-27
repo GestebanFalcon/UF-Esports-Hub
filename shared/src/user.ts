@@ -1,5 +1,5 @@
 ﻿import { z } from "zod";
-
+// available roles for users in the application
 export const userRoles = ["player", "manager", "admin"] as const;
 export type UserRole = (typeof userRoles)[number];
 
