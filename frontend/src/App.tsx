@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { loginSchema, registerSchema } from "@uf-esports-hub/shared";
 import TeamsPage from "./Teams_Page";
 import TeamDetails from "./Teams_Detailed";
+import CreateTeam from "./Team_Create";
 import "./index.css";
 
 function Arrow({ back = false }: { back?: boolean }) {
@@ -384,7 +385,9 @@ export function App() {
   const isLogin = pathname === "/login";
 
   const isTeams = pathname === "/teams";
-  const isTeamDetails = pathname.startsWith("/teams/");
+  const isCreateTeam = pathname === "/teams/create";
+  const isTeamDetails =
+    pathname.startsWith("/teams/") && !isCreateTeam;
 
   return (
     <div className="site-shell">
@@ -408,13 +411,13 @@ export function App() {
 
           <a
             className={
-              isTeams || isTeamDetails
+              isTeams || isCreateTeam || isTeamDetails
                 ? "nav-link active"
                 : "nav-link"
             }
             href="/teams"
             aria-current={
-              isTeams || isTeamDetails
+              isTeams || isCreateTeam || isTeamDetails
                 ? "page"
                 : undefined
             }
@@ -451,6 +454,8 @@ export function App() {
 
       {isTeams ? (
         <TeamsPage teams={[]} />
+      ) : isCreateTeam ? (
+        <CreateTeam />
       ) : isTeamDetails ? (
         <TeamDetails team={null} />
       ) : isRegister || isLogin ? (
