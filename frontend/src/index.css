@@ -676,3 +676,26 @@ nav {
     scroll-behavior: auto !important;
   }
 }
+
+/* Profile editing preview */
+.profile-layout { flex: 1; width: 100%; max-width: 1120px; margin: 0 auto; padding: 65px 0 90px; }
+.profile-header h1 { font-size: clamp(42px, 6vw, 70px); letter-spacing: -0.04em; margin: 16px 0; }
+.profile-header h1 span { color: #568aff; }
+.profile-header > p:last-child { color: #a1aabd; margin-bottom: 38px; }
+.profile-columns { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: 32px; align-items: start; }
+.profile-card, .profile-editor { border: 1px solid #283246; background: #0e1420; border-radius: 8px; padding: 32px; min-width: 0; }
+.profile-card { background: radial-gradient(ellipse at top right, #163c76 0, #0e1420 70%); overflow-wrap: anywhere; }
+.profile-avatar { display: grid; place-items: center; width: 90px; height: 90px; margin: 26px 0 24px; background: #2865ee; border-radius: 12px; font-size: 32px; font-weight: 800; }
+.profile-card h2 { font-size: 28px; margin: 0 0 12px; }
+.profile-game { color: #8fb8ff; font-size: 13px; }
+.profile-bio { color: #a8b5cb; line-height: 1.7; white-space: pre-wrap; }
+.profile-editor h2 { margin: 0 0 16px; font-size: 26px; }
+.profile-notice { padding: 14px; border-left: 3px solid #568aff; background: #142038; color: #b6c8e6; font-size: 12px; line-height: 1.6; margin-bottom: 28px; }
+.profile-editor .field textarea { display: block; width: 100%; resize: vertical; border: 1px solid #2b3342; border-radius: 4px; padding: 12px 14px; color: #f2f5fc; background: #0f141e; outline: none; font: inherit; font-size: 13px; }
+.profile-editor .field textarea:focus { border-color: #568aff; box-shadow: 0 0 0 3px #2865ee22; }
+.profile-actions { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-top: 20px; }
+.profile-actions .button:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+.profile-discard { background: transparent; border: 0; color: #b7c7df; padding: 12px 0; font-size: 13px; }
+.profile-discard:disabled { opacity: .4; cursor: not-allowed; }
+@media (max-width: 850px) { .profile-columns { grid-template-columns: 1fr; } .profile-layout { padding-top: 36px; } }
+@media (max-width: 480px) { .profile-card, .profile-editor { padding: 22px; } }
