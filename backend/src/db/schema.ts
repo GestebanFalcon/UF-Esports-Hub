@@ -7,7 +7,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-
+// database enum for the available user roles
 export const userRoleEnum = pgEnum('user_role', [
   'player',
   'manager',
@@ -19,6 +19,7 @@ export const users = pgTable('users', {
   username: text('username').notNull(),
   email: text('email').notNull(),
   hashedPassword: text('hashed_password').notNull(),
+  // new users default to the player role
   role: userRoleEnum('role').default('player').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true })

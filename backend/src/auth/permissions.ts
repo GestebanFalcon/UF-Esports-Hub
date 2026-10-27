@@ -40,6 +40,7 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     "manage_content",
   ],
 };
+// checking if a role has the requested permission
 
 export function hasPermission(
   role: UserRole,
