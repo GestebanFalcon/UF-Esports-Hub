@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { loginSchema, registerSchema } from "@uf-esports-hub/shared";
 import "./index.css";
+import { ProfilePage } from "./ProfilePage";
 
 function Arrow({ back = false }: { back?: boolean }) {
   return <span aria-hidden="true">{back ? "↗" : "→"}</span>;
@@ -270,6 +271,7 @@ export function App() {
   const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
   const isRegister = pathname === "/register";
   const isLogin = pathname === "/login";
+  const isProfile = pathname === "/profile";
   return (
     <div className="site-shell">
       <header className="site-header">
@@ -291,6 +293,9 @@ export function App() {
           >
             Log in
           </a>
+          <a className={isProfile ? "nav-link active" : "nav-link"} href="/profile" aria-current={isProfile ? "page" : undefined}>
+            Profile
+          </a>
           <a
             className="nav-register"
             href="/register"
@@ -302,6 +307,8 @@ export function App() {
       </header>
       {isRegister || isLogin ? (
         <AuthPage key={pathname} mode={isLogin ? "login" : "register"} />
+      ) : isProfile ? (
+        <ProfilePage />
       ) : pathname === "/" ? (
         <Landing />
       ) : (
