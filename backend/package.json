@@ -13,13 +13,16 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@uf-esports-hub/shared": "file:../shared",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
     "dotenv": "^18.0.8",
     "drizzle-orm": "^0.45.4",
     "express": "^5.3.0",
-    "pg": "^8.23.1",
-    "@uf-esports-hub/shared": "file:../shared"
+    "pg": "^8.23.1"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.5",
     "@types/pg": "^8.23.1",
