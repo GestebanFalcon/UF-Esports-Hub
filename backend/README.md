@@ -36,6 +36,6 @@ bun run build
 bun run start
 ```
 
-Import `db` from `src/db/index.ts` for database queries. No authentication or user CRUD endpoints are implemented yet.
+Import `db` from `src/db/index.ts` for database queries. Authentication routes live in `src/routes/auth/`: `index.ts` defines the router mounted at `/api/auth`, and `register.ts` handles `POST /api/auth/register`. Keep application middleware and router mounting in `src/app.ts`.
 
 Shared validation and types come from `@uf-esports-hub/shared`: use `UserRecord` for database rows and `toUser(row)` to produce the JSON-safe `User` without `hashedPassword`. Dev/build/typecheck scripts rebuild shared first. See [shared contracts](../shared/README.md).
