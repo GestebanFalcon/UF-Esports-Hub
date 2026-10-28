@@ -18,3 +18,7 @@ export type {
   LoginResponse,
   AuthError,
 } from "./auth.js";
+
+// PBI-6 self-profile API (provisional until issue #12 is integrated).
+export { profilePaths, profileUpdateSchema, profileResponseSchema, profileErrorSchema } from "./profile.js";
+export type { ProfileUpdate, ProfileResponse } from "./profile.js";
