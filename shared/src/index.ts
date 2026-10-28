@@ -18,3 +18,6 @@ export type {
   LoginResponse,
   AuthError,
 } from "./auth.js";
+
+export { teamPaths, teamCreateSchema, teamUpdateSchema, teamResponseSchema, teamListSchema } from "./team-routes.js";
+export type { TeamCreate, TeamUpdate, TeamResponse } from "./team-routes.js";
