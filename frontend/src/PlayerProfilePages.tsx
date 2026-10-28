@@ -1,136 +1,136 @@
-import { useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { getMyProfile, saveMyProfile, validateProfile, ProfileApiError, type PlayerProfile, type ProfileEdits, type ProfileErrors, type ProfileField } from "./playerProfileApi";
 import "./PlayerProfile.css";
 
-type PlayerProfile = {
-  displayName: string;
-  favoriteGame: string;
-  bio: string;
-  discord: string;
-};
-const KEY = "uf-esports-hub:player-profile-preview:v1";
-const EMPTY: PlayerProfile = { displayName: "", favoriteGame: "", bio: "", discord: "" };
-
-function loadProfile(): PlayerProfile {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return { ...EMPTY };
-    const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return { ...EMPTY };
-    const value = parsed as Record<string, unknown>;
-    return {
-      displayName: typeof value.displayName === "string" ? value.displayName.slice(0, 50) : "",
-      favoriteGame: typeof value.favoriteGame === "string" ? value.favoriteGame.slice(0, 60) : "",
-      bio: typeof value.bio === "string" ? value.bio.slice(0, 300) : "",
-      discord: typeof value.discord === "string" ? value.discord.slice(0, 60) : "",
-    };
-  } catch {
-    return { ...EMPTY };
-  }
-}
+const editsOf = (p: PlayerProfile): ProfileEdits => ({
+  displayName: p.displayName, favoriteGame: p.favoriteGame, bio: p.bio,
+});
 
 export function PlayerProfilePages() {
-  const [saved, setSaved] = useState<PlayerProfile>(loadProfile);
-  const [draft, setDraft] = useState<PlayerProfile>(() => loadProfile());
+  const [profile, setProfile] = useState<PlayerProfile | null>(null);
+  const [draft, setDraft] = useState<ProfileEdits>({ displayName: "", favoriteGame: "", bio: "" });
+  const [status, setStatus] = useState<"loading" | "ready" | "unauthenticated" | "missing" | "error">("loading");
   const [editing, setEditing] = useState(window.location.pathname.endsWith("/edit"));
+  const [saving, setSaving] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<ProfileErrors>({});
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  function setField<K extends keyof PlayerProfile>(key: K, value: PlayerProfile[K]) {
-    setDraft(previous => ({ ...previous, [key]: value }));
-    setMessage("");
-    setError("");
-  }
+  const load = useCallback(async (signal?: AbortSignal) => {
+    setStatus("loading"); setError("");
+    try {
+      const loaded = await getMyProfile(signal);
+      if (signal?.aborted) return;
+      setProfile(loaded); setDraft(editsOf(loaded)); setStatus("ready");
+    } catch (err) {
+      if (signal?.aborted) return;
+      setProfile(null);
+      setStatus(err instanceof ProfileApiError && err.status === 401 ? "unauthenticated"
+        : err instanceof ProfileApiError && err.status === 404 ? "missing" : "error");
+      setError(err instanceof Error ? err.message : "Unable to load player profile.");
+    }
+  }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    void load(controller.signal);
+    return () => controller.abort();
+  }, [load]);
+  useEffect(() => {
+    const onPop = () => { setEditing(window.location.pathname.endsWith("/edit")); setFieldErrors({}); setMessage(""); };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
   function navigate(edit: boolean) {
-    setEditing(edit);
-    setDraft({ ...saved });
-    setMessage("");
-    setError("");
+    if (saving) return;
+    if (!edit && profile) setDraft(editsOf(profile));
+    setEditing(edit); setMessage(""); setError(""); setFieldErrors({});
     window.history.pushState({}, "", edit ? "/profile/edit" : "/profile");
   }
-  function save(event: FormEvent<HTMLFormElement>) {
+  function setField(field: ProfileField, value: string) {
+    setDraft(previous => ({ ...previous, [field]: value }));
+    setFieldErrors(previous => ({ ...previous, [field]: undefined }));
+    setError(""); setMessage("");
+  }
+  async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const updated: PlayerProfile = {
-      displayName: draft.displayName.trim(),
-      favoriteGame: draft.favoriteGame.trim(),
-      bio: draft.bio.trim(),
-      discord: draft.discord.trim(),
+    if (saving || status !== "ready") return;
+    const next = {
+      displayName: draft.displayName.trim(), favoriteGame: draft.favoriteGame.trim(), bio: draft.bio.trim(),
     };
-    if (!updated.displayName) {
-      setError("Display name is required.");
-      document.getElementById("player-display-name")?.focus();
+    const errors = validateProfile(next);
+    setFieldErrors(errors); setMessage(""); setError("");
+    if (Object.keys(errors).length) {
+      document.getElementById("player-" + Object.keys(errors)[0])?.focus();
       return;
     }
+    setSaving(true);
     try {
-      localStorage.setItem(KEY, JSON.stringify(updated));
-    } catch {
-      setError("Browser storage is unavailable. Changes could not be saved.");
-      return;
-    }
-    setSaved(updated);
-    setDraft(updated);
-    setEditing(false);
-    setError("");
-    setMessage("Your player profile was saved in this browser.");
-    window.history.pushState({}, "", "/profile");
+      const updated = await saveMyProfile(next);
+      setProfile(updated); setDraft(editsOf(updated)); setEditing(false);
+      setStatus("ready");
+      setMessage("Your player profile was saved to your account.");
+      window.history.pushState({}, "", "/profile");
+    } catch (err) {
+      if (err instanceof ProfileApiError) {
+        setFieldErrors(err.fieldErrors);
+        if (err.status === 401) setStatus("unauthenticated");
+        else if (err.status === 404) setStatus("missing");
+      }
+      setError(err instanceof Error ? err.message : "Could not save profile.");
+      // Never discard draft input on failed saves.
+    } finally { setSaving(false); }
   }
 
+  const preview = editing ? draft : profile;
   return (
     <main className="player-page">
       <div className="player-page-heading">
         <p className="section-number">PLAYER PROFILE / UF ESPORTS</p>
         <h1>{editing ? "Edit player profile" : "Player profile"}<span>.</span></h1>
-        <p>Show your gamer identity and your favorite game.</p>
+        <p>View and manage your account-linked player identity.</p>
       </div>
-      <p className="player-local-note">Profile preview: information is saved only in this browser, not in a UF Esports account or database. Please do not enter sensitive information.</p>
-      <div className="player-columns">
+      {status === "loading" ? <section className="player-panel" role="status" aria-live="polite"><h2>Loading your profile…</h2></section>
+      : status !== "ready" ? <section className="player-panel" role="alert">
+          <h2>{status === "unauthenticated" ? "Sign in required" : status === "missing" ? "Profile unavailable" : "Unable to load profile"}</h2>
+          <p className="player-description">{error}</p>
+          {status === "unauthenticated" ? <a className="button primary" href="/login">Go to login</a>
+            : <button type="button" className="button primary" onClick={() => void load()}>Try again</button>}
+        </section>
+      : <div className="player-columns">
         <section className="player-summary" aria-label="Player profile details">
-          <div className="player-avatar" aria-hidden="true">{(editing ? draft : saved).displayName.trim().slice(0, 2).toUpperCase() || "UF"}</div>
+          <div className="player-avatar" aria-hidden="true">{preview?.displayName.trim().slice(0, 2).toUpperCase() || "UF"}</div>
           <p className="section-number">PLAYER CARD</p>
-          <h2>{(editing ? draft : saved).displayName.trim() || "New player"}</h2>
-          <p className="player-game">{(editing ? draft : saved).favoriteGame.trim() || "Favorite game not added"}</p>
-          <p className="player-bio">{(editing ? draft : saved).bio.trim() || "No bio yet. Tell other players about yourself."}</p>
-          {(editing ? draft : saved).discord.trim() && <p className="player-discord">Discord: {(editing ? draft : saved).discord.trim()}</p>}
+          <h2>{preview?.displayName || "New player"}</h2>
+          <p className="player-game">{preview?.favoriteGame || "Favorite game not added"}</p>
+          <p className="player-bio">{preview?.bio || "No bio yet."}</p>
         </section>
         <section className="player-panel">
-          {editing ? (
-            <>
-              <h2>Customize your profile</h2>
-              <form onSubmit={save}>
-                <div className="field">
-                  <label htmlFor="player-display-name">Display name *</label>
-                  <input id="player-display-name" required maxLength={50} value={draft.displayName} onChange={e => setField("displayName", e.target.value)} placeholder="Your gamer tag" aria-invalid={!!error && !draft.displayName.trim()} />
-                </div>
-                <div className="field">
-                  <label htmlFor="player-favorite-game">Favorite game</label>
-                  <input id="player-favorite-game" maxLength={60} value={draft.favoriteGame} onChange={e => setField("favoriteGame", e.target.value)} placeholder="e.g. Rocket League" />
-                </div>
-                <div className="field">
-                  <label htmlFor="player-discord">Discord username</label>
-                  <input id="player-discord" maxLength={60} value={draft.discord} onChange={e => setField("discord", e.target.value)} placeholder="Optional" />
-                </div>
-                <div className="field">
-                  <label htmlFor="player-bio">Bio</label>
-                  <textarea id="player-bio" rows={5} maxLength={300} value={draft.bio} onChange={e => setField("bio", e.target.value)} placeholder="Introduce yourself to the community" />
-                  <p className="field-hint">{draft.bio.length}/300 characters</p>
-                </div>
-                {error && <p role="alert" className="field-error">{error}</p>}
-                <div className="player-buttons">
-                  <button className="button primary" type="submit">Save profile <span aria-hidden="true">→</span></button>
-                  <button className="player-secondary" type="button" onClick={() => navigate(false)}>Cancel</button>
-                </div>
-              </form>
-            </>
-          ) : (
-            <>
-              <p className="section-number">ABOUT THIS PLAYER</p>
-              <h2>{saved.displayName ? "Your player details" : "Create your player card"}</h2>
-              <p className="player-description">{saved.displayName ? "Your current player profile is shown on the left. Edit it to update your details." : "Add a display name, favorite game, Discord username, and bio to get started."}</p>
-              <button className="button primary" type="button" onClick={() => navigate(true)}>{saved.displayName ? "Edit profile" : "Set up profile"} <span aria-hidden="true">→</span></button>
-              {message && <p className="player-success" role="status">{message}</p>}
-            </>
-          )}
+          {editing ? <>
+            <h2>Customize your profile</h2>
+            <form onSubmit={event => void save(event)} noValidate>
+              {(["displayName", "favoriteGame", "bio"] as const).map(field => <div className="field" key={field}>
+                <label htmlFor={"player-" + field}>{field === "displayName" ? "Display name *" : field === "favoriteGame" ? "Favorite game" : "Bio"}</label>
+                {field === "bio" ?
+                  <textarea id={"player-" + field} rows={5} maxLength={300} value={draft[field]} onChange={event => setField(field, event.target.value)} aria-invalid={!!fieldErrors[field]} aria-describedby={fieldErrors[field] ? "error-" + field : undefined} disabled={saving} />
+                  : <input id={"player-" + field} value={draft[field]} maxLength={field === "displayName" ? 50 : 60} required={field === "displayName"} onChange={event => setField(field, event.target.value)} aria-invalid={!!fieldErrors[field]} aria-describedby={fieldErrors[field] ? "error-" + field : undefined} disabled={saving} />}
+                {fieldErrors[field] && <p className="field-error" id={"error-" + field}>{fieldErrors[field]}</p>}
+              </div>)}
+              {error && <p className="field-error" role="alert">{error}</p>}
+              <div className="player-buttons">
+                <button className="button primary" type="submit" disabled={saving}>{saving ? "Saving…" : "Save profile"}</button>
+                <button className="player-secondary" type="button" onClick={() => navigate(false)} disabled={saving}>Discard changes</button>
+              </div>
+            </form>
+          </> : <>
+            <p className="section-number">ABOUT THIS PLAYER</p>
+            <h2>Your player details</h2>
+            <p className="player-description">Your saved profile is loaded from your account. Changes are only confirmed after the server saves them.</p>
+            <button className="button primary" type="button" onClick={() => navigate(true)}>Edit profile <span aria-hidden="true">→</span></button>
+            {message && <p className="player-success" role="status">{message}</p>}
+          </>}
         </section>
-      </div>
+      </div>}
     </main>
   );
 }
