@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { PlayerProfilePages } from "./PlayerProfilePages";
+import "./PlayerProfileShortcut.css";
 
 function ProfileShell() {
   return (
