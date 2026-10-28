@@ -699,3 +699,21 @@ nav {
 .profile-discard:disabled { opacity: .4; cursor: not-allowed; }
 @media (max-width: 850px) { .profile-columns { grid-template-columns: 1fr; } .profile-layout { padding-top: 36px; } }
 @media (max-width: 480px) { .profile-card, .profile-editor { padding: 22px; } }
+
+/* Standalone profile entry link: no changes to shared App.tsx navigation. */
+.profile-shortcut {
+  position: fixed;
+  z-index: 20;
+  right: 22px;
+  bottom: 20px;
+  padding: 12px 18px;
+  border: 1px solid #587fca;
+  border-radius: 6px;
+  background: #173d86;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 6px 24px #0008;
+}
+.profile-shortcut:hover { background: #2865ee; }
+.profile-shortcut:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
