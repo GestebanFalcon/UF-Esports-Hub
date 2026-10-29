@@ -120,6 +120,25 @@ nav {
 .nav-register:hover {
   background: #12203a;
 }
+.logout-button {
+  color: inherit;
+  background: transparent;
+}
+.nav-user {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #a7afbf;
+}
+.session-notice {
+  color: #a7afbf;
+  font-size: 14px;
+}
+.signed-in p {
+  overflow-wrap: anywhere;
+  margin-bottom: 24px;
+}
 .landing {
   flex: 1;
   padding-top: 38px;

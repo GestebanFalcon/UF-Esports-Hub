@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "bun run --cwd ../shared build && bun --hot src/index.tsx",
     "start": "bun run --cwd ../shared build && NODE_ENV=production bun src/index.tsx",
-    "build": "bun run --cwd ../shared build && bun run build.ts"
+    "build": "bun run --cwd ../shared build && bun run build.ts",
+    "test": "bun run --cwd ../shared build && bun test tests"
   },
   "dependencies": {
     "bun-plugin-tailwind": "^0.0.15",

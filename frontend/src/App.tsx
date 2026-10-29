@@ -1,4 +1,3 @@
-
 import { useState, type FormEvent } from "react";
 import {
   loginSchema,
@@ -7,6 +6,8 @@ import {
   registerResponseSchema,
   authErrorSchema,
 } from "@uf-esports-hub/shared";
+import { API_BASE_URL, AuthApiError, authClient, type Session } from "./auth";
+import { useAuth } from "./use-auth";
 import "./index.css";
 
 function Arrow({ back = false }: { back?: boolean }) {
@@ -27,7 +28,11 @@ function Brand() {
   );
 }
 
-function AuthPage({ mode }: { mode: "login" | "register" }) {
+function AuthPage({ mode, session, ready }: {
+  mode: "login" | "register";
+  session: Session | null;
+  ready: boolean;
+}) {
   const isLogin = mode === "login";
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -38,7 +43,7 @@ function AuthPage({ mode }: { mode: "login" | "register" }) {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (isSubmitting) return;
+    if (isSubmitting || !ready) return;
 
     const form = event.currentTarget;
     const formData = Object.fromEntries(new FormData(form));
@@ -73,23 +78,22 @@ function AuthPage({ mode }: { mode: "login" | "register" }) {
 
     setErrors({});
 
-    // Login will be implemented in PBI-3
-    if (isLogin) {
-      setMessage(
-        "Your details are valid. Sign-in is coming soon — you have not been signed in.",
-      );
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
+      if (isLogin) {
+        await authClient.login(loginSchema.parse(result.data));
+        form.reset();
+        setShowPassword(false);
+        return;
+      }
+
       // Prepare the registration information
       const registrationData = registerRequestSchema.parse(result.data);
 
       // Send the information to the Express backend
       const response = await fetch(
-        "http://localhost:3001/api/auth/register",
+        `${API_BASE_URL}/register`,
         {
           method: "POST",
           headers: {
@@ -151,7 +155,7 @@ function AuthPage({ mode }: { mode: "login" | "register" }) {
 
       // Show a message when the account is created
       setMessage(
-        "Account created successfully! Login will be available soon.",
+        "Account created successfully! You can now log in.",
       );
 
       // Clear the registration form
@@ -159,11 +163,20 @@ function AuthPage({ mode }: { mode: "login" | "register" }) {
       setShowPassword(false);
 
     } catch (error) {
-      console.error("Registration error:", error);
-
-      setMessage(
-        "Could not connect to the server. Please try again.",
-      );
+      if (error instanceof AuthApiError) {
+        const nextErrors: Record<string, string> = {};
+        for (const [field, messages] of Object.entries(error.fieldErrors)) {
+          if (messages[0]) nextErrors[field] = messages[0];
+        }
+        setErrors(nextErrors);
+        setMessage(error.message);
+        const firstField = Object.keys(nextErrors)[0];
+        if (firstField) {
+          form.querySelector<HTMLInputElement>(`[name="${firstField}"]`)?.focus();
+        }
+      } else {
+        setMessage("Could not connect to the server. Please try again.");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -222,172 +235,183 @@ function AuthPage({ mode }: { mode: "login" | "register" }) {
           </p>
         </div>
 
-        <form onSubmit={submit} noValidate>
-          {!isLogin && (
-            <div className="field">
-              <label htmlFor="username">Username</label>
-
-              <input
-                id="username"
-                name="username"
-                placeholder="Your in-game name"
-                autoComplete="username"
-                required
-                aria-invalid={!!errors.username}
-                aria-describedby={
-                  errors.username ? "username-error" : undefined
-                }
-              />
-
-              {errors.username && (
-                <p className="field-error" id="username-error">
-                  {errors.username}
-                </p>
-              )}
-            </div>
-          )}
-
-          <div className="field">
-            <label htmlFor="email">Email address</label>
-
-            <input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="you@ufl.edu"
-              autoComplete={isLogin ? "username" : "email"}
-              required
-              aria-invalid={!!errors.email}
-              aria-describedby={
-                errors.email ? "email-error" : undefined
-              }
-            />
-
-            {errors.email && (
-              <p className="field-error" id="email-error">
-                {errors.email}
-              </p>
-            )}
+        {session ? (
+          <div className="signed-in" role="status">
+            <p>Welcome, {session.user.username}. You are logged in.</p>
+            <a className="button primary" href="/">Go to home <Arrow /></a>
           </div>
+        ) : (
+          <>
+            <form onSubmit={submit} noValidate aria-busy={isSubmitting || !ready}>
+              {!isLogin && (
+                <div className="field">
+                  <label htmlFor="username">Username</label>
 
-          <div className="field">
-            <label htmlFor="password">Password</label>
+                  <input
+                    id="username"
+                    name="username"
+                    placeholder="Your in-game name"
+                    autoComplete="username"
+                    required
+                    aria-invalid={!!errors.username}
+                    aria-describedby={
+                      errors.username ? "username-error" : undefined
+                    }
+                  />
 
-            <div className="password-input">
-              <input
-                id="password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                placeholder={
-                  isLogin
-                    ? "Enter your password"
-                    : "Create a password"
-                }
-                autoComplete={
-                  isLogin ? "current-password" : "new-password"
-                }
-                required
-                minLength={isLogin ? undefined : 8}
-                aria-invalid={!!errors.password}
-                aria-describedby={
-                  errors.password
-                    ? "password-error"
-                    : isLogin
-                      ? undefined
-                      : "password-hint"
-                }
-              />
+                  {errors.username && (
+                    <p className="field-error" id="username-error">
+                      {errors.username}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="field">
+                <label htmlFor="email">Email address</label>
+
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="you@ufl.edu"
+                  autoComplete={isLogin ? "username" : "email"}
+                  required
+                  aria-invalid={!!errors.email}
+                  aria-describedby={
+                    errors.email ? "email-error" : undefined
+                  }
+                />
+
+                {errors.email && (
+                  <p className="field-error" id="email-error">
+                    {errors.email}
+                  </p>
+                )}
+              </div>
+
+              <div className="field">
+                <label htmlFor="password">Password</label>
+
+                <div className="password-input">
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder={
+                      isLogin
+                        ? "Enter your password"
+                        : "Create a password"
+                    }
+                    autoComplete={
+                      isLogin ? "current-password" : "new-password"
+                    }
+                    required
+                    minLength={isLogin ? undefined : 8}
+                    aria-invalid={!!errors.password}
+                    aria-describedby={
+                      errors.password
+                        ? "password-error"
+                        : isLogin
+                          ? undefined
+                          : "password-hint"
+                    }
+                  />
+
+                  <button
+                    className="visibility-toggle"
+                    type="button"
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
+                    aria-pressed={showPassword}
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
+
+                {errors.password ? (
+                  <p className="field-error" id="password-error">
+                    {errors.password}
+                  </p>
+                ) : !isLogin ? (
+                  <p className="field-hint" id="password-hint">
+                    Use at least 8 characters.
+                  </p>
+                ) : null}
+              </div>
+
+              {!isLogin && (
+                <div className="field">
+                  <label htmlFor="confirmPassword">
+                    Confirm password
+                  </label>
+
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password again"
+                    autoComplete="new-password"
+                    required
+                    aria-invalid={!!errors.confirmPassword}
+                    aria-describedby={
+                      errors.confirmPassword
+                        ? "confirmPassword-error"
+                        : undefined
+                    }
+                  />
+
+                  {errors.confirmPassword && (
+                    <p
+                      className="field-error"
+                      id="confirmPassword-error"
+                    >
+                      {errors.confirmPassword}
+                    </p>
+                  )}
+                </div>
+              )}
 
               <button
-                className="visibility-toggle"
-                type="button"
-                aria-label={
-                  showPassword ? "Hide password" : "Show password"
-                }
-                aria-pressed={showPassword}
-                onClick={() => setShowPassword(!showPassword)}
+                className="button primary submit-button"
+                type="submit"
+                disabled={isSubmitting || !ready}
               >
-                {showPassword ? "Hide" : "Show"}
+                {!ready
+                  ? "Checking session..."
+                  : isSubmitting
+                    ? isLogin ? "Logging in..." : "Creating account..."
+                    : isLogin
+                      ? "Log in"
+                      : "Create account"}{" "}
+                <Arrow />
               </button>
-            </div>
 
-            {errors.password ? (
-              <p className="field-error" id="password-error">
-                {errors.password}
+              <p className="form-note">
+                {isLogin
+                  ? "Log in to your UF Esports Hub account."
+                  : "Create your account to join the UF Esports Hub."}
               </p>
-            ) : !isLogin ? (
-              <p className="field-hint" id="password-hint">
-                Use at least 8 characters.
+
+              <p className="form-status" role="status">
+                {message}
               </p>
-            ) : null}
-          </div>
+            </form>
 
-          {!isLogin && (
-            <div className="field">
-              <label htmlFor="confirmPassword">
-                Confirm password
-              </label>
+            <p className="auth-switch">
+              {isLogin
+                ? "New to the hub?"
+                : "Already part of the community?"}{" "}
 
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type={showPassword ? "text" : "password"}
-                placeholder="Enter your password again"
-                autoComplete="new-password"
-                required
-                aria-invalid={!!errors.confirmPassword}
-                aria-describedby={
-                  errors.confirmPassword
-                    ? "confirmPassword-error"
-                    : undefined
-                }
-              />
-
-              {errors.confirmPassword && (
-                <p
-                  className="field-error"
-                  id="confirmPassword-error"
-                >
-                  {errors.confirmPassword}
-                </p>
-              )}
-            </div>
-          )}
-
-          <button
-            className="button primary submit-button"
-            type="submit"
-            disabled={isSubmitting}
-          >
-            {isSubmitting
-              ? "Creating account..."
-              : isLogin
-                ? "Log in"
-                : "Create account"}{" "}
-            <Arrow />
-          </button>
-
-          <p className="form-note">
-            {isLogin
-              ? "Login preview. Sign-in will be available soon."
-              : "Create your account to join the UF Esports Hub."}
-          </p>
-
-          <p className="form-status" role="status">
-            {message}
-          </p>
-        </form>
-
-        <p className="auth-switch">
-          {isLogin
-            ? "New to the hub?"
-            : "Already part of the community?"}{" "}
-
-          <a href={isLogin ? "/register" : "/login"}>
-            {isLogin ? "Create an account" : "Log in"}{" "}
-            <Arrow />
-          </a>
-        </p>
+              <a href={isLogin ? "/register" : "/login"}>
+                {isLogin ? "Create an account" : "Log in"}{" "}
+                <Arrow />
+              </a>
+            </p>
+          </>
+        )}
       </section>
     </main>
   );
@@ -451,6 +475,7 @@ function Landing() {
 }
 
 export function App() {
+  const { session, ready, notice, logout } = useAuth();
   const pathname =
     window.location.pathname.replace(/\/+$/, "") || "/";
 
@@ -477,34 +502,49 @@ export function App() {
             Home
           </a>
 
-          <a
-            className={
-              isLogin ? "nav-link active" : "nav-link"
-            }
-            href="/login"
-            aria-current={
-              isLogin ? "page" : undefined
-            }
-          >
-            Log in
-          </a>
+          {session ? (
+            <>
+              <span className="nav-user">Signed in as {session.user.username}</span>
+              <button className="nav-register logout-button" type="button" onClick={logout}>
+                Log out
+              </button>
+            </>
+          ) : (
+            <>
+              <a
+                className={
+                  isLogin ? "nav-link active" : "nav-link"
+                }
+                href="/login"
+                aria-current={
+                  isLogin ? "page" : undefined
+                }
+              >
+                Log in
+              </a>
 
-          <a
-            className="nav-register"
-            href="/register"
-            aria-current={
-              isRegister ? "page" : undefined
-            }
-          >
-            Join the hub <Arrow back />
-          </a>
+              <a
+                className="nav-register"
+                href="/register"
+                aria-current={
+                  isRegister ? "page" : undefined
+                }
+              >
+                Join the hub <Arrow back />
+              </a>
+            </>
+          )}
         </nav>
       </header>
+
+      {notice && <p className="session-notice" role="status">{notice}</p>}
 
       {isRegister || isLogin ? (
         <AuthPage
           key={pathname}
           mode={isLogin ? "login" : "register"}
+          session={session}
+          ready={ready}
         />
       ) : pathname === "/" ? (
         <Landing />
