@@ -1,6 +1,14 @@
 export { userSchema, userRecordSchema, toUser } from "./user.js";
 export type { User, UserRecord } from "./user.js";
 export {
+  profileSchema,
+  profileUpdateSchema,
+  profileRecordSchema,
+  profileFieldLimits,
+  toProfile,
+} from "./profile.js";
+export type { Profile, ProfileUpdate, ProfileRecord } from "./profile.js";
+export {
   registerSchema,
   registerRequestSchema,
   registerResponseSchema,
