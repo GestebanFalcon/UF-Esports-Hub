@@ -1,0 +1,14 @@
+.not-found {
+  flex: 1;
+  padding: 100px 0;
+}
+.not-found h1 {
+  font-size: 44px;
+  letter-spacing: -2px;
+  margin: 25px 0 35px;
+}
+@media (max-width: 700px) {
+  .not-found h1 {
+    font-size: 34px;
+  }
+}

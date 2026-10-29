@@ -1,33 +1,19 @@
 import {
-  authErrorSchema,
   loginRequestSchema,
   loginResponseSchema,
   registerResponseSchema,
   type LoginRequest,
-  type User,
 } from "@uf-esports-hub/shared";
 
-export const API_BASE_URL = "http://localhost:3001/api/auth";
+import { AUTH_API_URL } from "../../config/api";
+import { AuthApiError, readAuthResponse, type AuthRequest } from "./api";
+import type { Credentials, Session, SessionStorage } from "./types";
+
 const STORAGE_KEY = "uf-esports-hub.auth";
-
-type Credentials = { accessToken: string; tokenType: "Bearer"; expiresAt: number };
-export type Session = Credentials & { user: User };
-type SessionStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
-type Request = (url: string, init?: RequestInit) => Promise<Response>;
-
-export class AuthApiError extends Error {
-  constructor(
-    message: string,
-    public fieldErrors: Record<string, string[]> = {},
-    public status?: number,
-  ) {
-    super(message);
-  }
-}
 
 export function createAuthClient(options: {
   storage: () => SessionStorage | null;
-  request?: Request;
+  request?: AuthRequest;
   now?: () => number;
 }) {
   const request = options.request ?? ((url, init) => fetch(url, init));
@@ -77,30 +63,17 @@ export function createAuthClient(options: {
     return null;
   }
 
-  async function readResponse(response: Response): Promise<unknown> {
-    const body: unknown = await response.json().catch(() => null);
-    if (!response.ok) {
-      const error = authErrorSchema.safeParse(body);
-      throw new AuthApiError(
-        error.success ? error.data.message : "The request failed. Please try again.",
-        error.success ? error.data.fieldErrors : undefined,
-        response.status,
-      );
-    }
-    return body;
-  }
-
   async function login(input: LoginRequest) {
     const body = loginRequestSchema.parse(input);
     const attempt = ++revision;
     // Count from request start so latency cannot extend the advertised lifetime.
     const startedAt = now();
-    const response = await request(`${API_BASE_URL}/login`, {
+    const response = await request(`${AUTH_API_URL}/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    const result = loginResponseSchema.safeParse(await readResponse(response));
+    const result = loginResponseSchema.safeParse(await readAuthResponse(response));
     if (!result.success) throw new AuthApiError("The server returned an unexpected response.");
     const { expiresIn, ...data } = result.data;
     const next = { ...data, expiresAt: startedAt + expiresIn * 1000 };
@@ -113,10 +86,10 @@ export function createAuthClient(options: {
     const credentials = readCredentials();
     if (!credentials) return;
     try {
-      const response = await request(`${API_BASE_URL}/me`, {
+      const response = await request(`${AUTH_API_URL}/me`, {
         headers: { Authorization: `${credentials.tokenType} ${credentials.accessToken}` },
       });
-      const result = registerResponseSchema.safeParse(await readResponse(response));
+      const result = registerResponseSchema.safeParse(await readAuthResponse(response));
       if (!result.success) throw new AuthApiError("The server returned an unexpected response.");
       if (attempt === revision) {
         if (credentials.expiresAt <= now()) logout();
@@ -140,7 +113,7 @@ export function createAuthClient(options: {
     }
     const headers = new Headers(init?.headers);
     headers.set("Authorization", `${current.tokenType} ${current.accessToken}`);
-    const response = await request(`${API_BASE_URL}${path}`, { ...init, headers });
+    const response = await request(`${AUTH_API_URL}${path}`, { ...init, headers });
     if (response.status === 401 && session === current) logout();
     return response;
   }

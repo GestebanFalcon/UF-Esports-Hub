@@ -1,0 +1,149 @@
+.landing {
+  flex: 1;
+  padding-top: 38px;
+  display: flex;
+  flex-direction: column;
+}
+.hero-topline {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+.hero-edition {
+  color: #6f7b90;
+}
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 95px 0 105px;
+}
+.hero-kicker {
+  color: #8c99ae;
+  margin: 0 0 25px;
+}
+.hero h1 {
+  font-size: clamp(46px, 6.7vw, 94px);
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  font-weight: 700;
+  margin: 0 0 30px;
+}
+.hero h1 span {
+  color: #568aff;
+}
+.hero-description {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #a1aabd;
+  margin: 0 0 34px;
+}
+.hero-art {
+  position: absolute;
+  z-index: -1;
+  right: -30px;
+  top: 45px;
+  width: 440px;
+  height: 440px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse, #17397855 0, transparent 65%);
+  transform: rotate(-12deg);
+  opacity: 0.65;
+}
+.hero-art > span {
+  font-size: 210px;
+  letter-spacing: -28px;
+  font-weight: 900;
+  font-style: italic;
+  color: #0f1d35;
+  -webkit-text-stroke: 1px #2c4d87;
+  transform: translateX(-12px);
+}
+.art-line {
+  position: absolute;
+  border: 1px solid #234478;
+  width: 340px;
+  height: 340px;
+  transform: rotate(45deg);
+}
+.line-two {
+  width: 400px;
+  height: 400px;
+  border-color: #192c49;
+}
+.line-three {
+  width: 460px;
+  height: 460px;
+  border-color: #142038;
+}
+.art-caption {
+  position: absolute;
+  bottom: 50px;
+  letter-spacing: 5px;
+  font-size: 9px;
+  color: #6595d6;
+}
+.landing-bottom {
+  margin-top: auto;
+  padding: 25px 0;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border-top: 1px solid #232832;
+  color: #8f9cb2;
+}
+.landing-bottom a {
+  margin-left: auto;
+  display: flex;
+  gap: 20px;
+  color: #b4c1d8;
+}
+@media (min-width: 1500px) {
+  .hero {
+    padding-top: 125px;
+    padding-bottom: 125px;
+  }
+}
+@media (max-width: 1000px) {
+  .hero-art {
+    right: -160px;
+    opacity: 0.35;
+  }
+  .hero h1 {
+    letter-spacing: -3px;
+  }
+}
+@media (max-width: 700px) {
+  .hero-edition {
+    display: none;
+  }
+  .hero {
+    padding: 85px 0 90px;
+  }
+  .hero h1 {
+    font-size: clamp(40px, 8.8vw, 62px);
+    letter-spacing: -2px;
+  }
+  .hero-description {
+    font-size: 14px;
+  }
+  .hero-art {
+    right: -220px;
+    opacity: 0.22;
+    top: 20px;
+  }
+  .hero-kicker {
+    font-size: 9px;
+    letter-spacing: 1.3px;
+  }
+  .landing-bottom {
+    font-size: 8px;
+    gap: 10px;
+  }
+  .landing-bottom a {
+    gap: 8px;
+    font-size: 8px;
+  }
+}

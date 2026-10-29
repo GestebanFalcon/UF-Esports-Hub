@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { API_BASE_URL, AuthApiError, createAuthClient } from "../src/auth";
+import { AUTH_API_URL } from "../src/config/api";
+import { AuthApiError } from "../src/features/auth/api";
+import { createAuthClient } from "../src/features/auth/client";
 
 const user = {
   id: "b48653da-1234-4567-89ab-123456789abc",
@@ -42,7 +44,7 @@ describe("frontend authentication", () => {
     let notifications = 0;
     const unsubscribe = client.subscribe(() => { notifications++; });
     await client.login(credentials);
-    expect(calls[0]?.url).toBe(`${API_BASE_URL}/login`);
+    expect(calls[0]?.url).toBe(`${AUTH_API_URL}/login`);
     expect(calls[0]?.init?.method).toBe("POST");
     expect(JSON.parse(calls[0]?.init?.body as string)).toEqual(credentials);
     expect(client.getSnapshot()?.user).toEqual(user);
@@ -93,7 +95,7 @@ describe("frontend authentication", () => {
     expect(reloaded.getSnapshot()).toBeNull();
     respondWith(async () => Response.json({ user: { ...user, username: "UpdatedGator" } }));
     await reloaded.restore();
-    expect(calls[1]?.url).toBe(`${API_BASE_URL}/me`);
+    expect(calls[1]?.url).toBe(`${AUTH_API_URL}/me`);
     expect(new Headers(calls[1]?.init?.headers).get("Authorization")).toBe("Bearer test-token");
     expect(reloaded.getSnapshot()?.user.username).toBe("UpdatedGator");
   });
