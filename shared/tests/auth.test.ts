@@ -47,6 +47,9 @@ test("registration API strips confirmation and client-supplied internal fields",
 
 test("auth responses validate the public user and remove hashes", () => {
   const response = {
+    accessToken: "test-access-token",
+    tokenType: "Bearer",
+    expiresIn: 900,
     user: {
       id: "b48653da-1234-4567-89ab-123456789abc",
       username: "Gator",
@@ -59,7 +62,7 @@ test("auth responses validate the public user and remove hashes", () => {
   for (const schema of [loginResponseSchema, registerResponseSchema]) {
     expect(schema.parse(response).user).not.toHaveProperty("hashedPassword");
     expect(
-      schema.safeParse({ user: { ...response.user, id: "invalid" } }).success,
+      schema.safeParse({ ...response, user: { ...response.user, id: "invalid" } }).success,
     ).toBe(false);
   }
   expect(
@@ -68,4 +71,28 @@ test("auth responses validate the public user and remove hashes", () => {
       fieldErrors: { email: ["Invalid email"] },
     }).success,
   ).toBe(true);
+});
+
+test("login response preserves token fields and requires valid token metadata", () => {
+  const response = {
+    user: {
+      id: "b48653da-1234-4567-89ab-123456789abc",
+      username: "Gator",
+      email: "player@ufl.edu",
+      createdAt: "2026-10-20T12:00:00.000Z",
+      updatedAt: "2026-10-20T12:00:00.000Z",
+    },
+    accessToken: "test-access-token",
+    tokenType: "Bearer",
+    expiresIn: 900,
+  };
+  expect(loginResponseSchema.parse(response)).toEqual(response);
+  for (const invalid of [
+    { accessToken: undefined }, { accessToken: "" },
+    { tokenType: undefined }, { tokenType: "Basic" },
+    { expiresIn: undefined }, { expiresIn: 0 }, { expiresIn: -1 },
+    { expiresIn: 1.5 }, { expiresIn: "900" },
+  ]) {
+    expect(loginResponseSchema.safeParse({ ...response, ...invalid }).success).toBe(false);
+  }
 });

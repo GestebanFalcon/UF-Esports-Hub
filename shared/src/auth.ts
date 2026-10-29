@@ -24,9 +24,14 @@ export const loginRequestSchema = userSchema.pick({ email: true }).extend({
 });
 export const loginSchema = loginRequestSchema;
 
-/** Proposed success bodies for the future backend auth routes. */
+/** Success bodies returned by the backend authentication routes. */
 export const registerResponseSchema = z.object({ user: userSchema });
-export const loginResponseSchema = z.object({ user: userSchema });
+export const loginResponseSchema = z.object({
+  user: userSchema,
+  accessToken: z.string().min(1),
+  tokenType: z.literal("Bearer"),
+  expiresIn: z.number().int().positive(),
+});
 export const authErrorSchema = z.object({
   message: z.string().min(1),
   fieldErrors: z.record(z.string(), z.array(z.string())).optional(),

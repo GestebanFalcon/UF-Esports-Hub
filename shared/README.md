@@ -35,7 +35,7 @@ All exports below are available from `@uf-esports-hub/shared`; their types are i
 | `loginSchema` | `LoginInput` | Email and nonempty password for the login form |
 | `loginRequestSchema` | `LoginRequest` | Login API body, same shape as the form |
 | `registerResponseSchema` | `RegisterResponse` | Registration success body containing a public `user` |
-| `loginResponseSchema` | `LoginResponse` | Login success body containing a public `user` |
+| `loginResponseSchema` | `LoginResponse` | Public `user`, nonempty `accessToken`, `tokenType: "Bearer"`, and positive integer `expiresIn` in seconds |
 | `authErrorSchema` | `AuthError` | Error `message` and optional `fieldErrors` |
 
-Registration requires at least eight password characters. Login only requires a nonempty password so it can accept existing credentials without applying a new-account policy. Neither schema trims or changes passwords. The frontend currently previews these flows; backend authentication endpoints and session handling are not implemented.
+Registration requires at least eight password characters. Login uses email/password and only requires a nonempty password so it can accept existing credentials without applying a new-account policy. Neither schema trims or changes passwords. Backend login matches emails without regard to case and returns an expiring JWT. Parsing a login response retains the token fields and removes unknown fields, including password hashes inside `user`. The frontend currently previews these flows and does not yet send authentication requests or handle tokens.
