@@ -28,6 +28,8 @@ Run `bun run test` for validation and serialization tests. Schema APIs follow th
 
 `ProfileRecord` matches `player_profiles`: `userId` (UUID), required `displayName` (1–40 characters), nullable `favoriteGame` (up to 60) and `bio` (up to 500), and database `Date` timestamps. The three profile fields are public. `Profile` / `profileSchema` contain only those public fields, with nullable values represented as JSON `null`; `toProfile` excludes owner IDs and timestamps. `ProfileUpdate` / `profileUpdateSchema` accept only editable profile fields, reject unknown and protected account fields, and require at least one field. Empty favorite game and bio strings are allowed; send `null` to clear either value.
 
+`profilePaths.self` defines `/api/me/profile`. Its GET and PATCH responses use `ProfileResponse` / `profileResponseSchema`, which share the same public shape as `Profile`. `profileErrorSchema` describes error messages with optional field errors. `profileFieldLimits` provides the database-aligned limits to clients.
+
 ## Authentication contracts
 
 All exports below are available from `@uf-esports-hub/shared`; their types are inferred from Zod.

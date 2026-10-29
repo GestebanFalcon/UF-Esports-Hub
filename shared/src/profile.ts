@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+export const profilePaths = {
+  self: "/api/me/profile",
+} as const;
+
 export const profileFieldLimits = {
   displayName: 40,
   favoriteGame: 60,
@@ -18,6 +22,15 @@ export const profileSchema = z.object({
   bio: bioSchema.nullable(),
 });
 export type Profile = z.infer<typeof profileSchema>;
+
+// GET and PATCH share the same public profile contract.
+export const profileResponseSchema = profileSchema;
+export type ProfileResponse = z.infer<typeof profileResponseSchema>;
+
+export const profileErrorSchema = z.object({
+  message: z.string(),
+  fieldErrors: z.record(z.string(), z.array(z.string())).optional(),
+});
 
 // only these profile fields can be changed
 export const profileUpdateSchema = z.object({

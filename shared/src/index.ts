@@ -5,9 +5,12 @@ export {
   profileUpdateSchema,
   profileRecordSchema,
   profileFieldLimits,
+  profilePaths,
+  profileResponseSchema,
+  profileErrorSchema,
   toProfile,
 } from "./profile.js";
-export type { Profile, ProfileUpdate, ProfileRecord } from "./profile.js";
+export type { Profile, ProfileUpdate, ProfileRecord, ProfileResponse } from "./profile.js";
 export {
   registerSchema,
   registerRequestSchema,

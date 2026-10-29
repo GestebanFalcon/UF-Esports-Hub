@@ -1,8 +1,9 @@
+import { profileFieldLimits } from "@uf-esports-hub/shared";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { getMyProfile, saveMyProfile, validateProfile, ProfileApiError, type PlayerProfile as Profile, type ProfileEdits, type ProfileErrors, type ProfileField } from "../api";
 
 const editsOf = (p: Profile): ProfileEdits => ({
-  displayName: p.displayName, favoriteGame: p.favoriteGame, bio: p.bio,
+  displayName: p.displayName, favoriteGame: p.favoriteGame ?? "", bio: p.bio ?? "",
 });
 
 type PlayerProfileProps = { editing: boolean; onNavigate: (editing: boolean) => void };
@@ -105,8 +106,8 @@ export function PlayerProfile({ editing, onNavigate }: PlayerProfileProps) {
               {(["displayName", "favoriteGame", "bio"] as const).map(field => <div className="field" key={field}>
                 <label htmlFor={"player-" + field}>{field === "displayName" ? "Display name *" : field === "favoriteGame" ? "Favorite game" : "Bio"}</label>
                 {field === "bio" ?
-                  <textarea id={"player-" + field} rows={5} maxLength={300} value={draft[field]} onChange={event => setField(field, event.target.value)} aria-invalid={!!fieldErrors[field]} aria-describedby={fieldErrors[field] ? "error-" + field : undefined} disabled={saving} />
-                  : <input id={"player-" + field} value={draft[field]} maxLength={field === "displayName" ? 50 : 60} required={field === "displayName"} onChange={event => setField(field, event.target.value)} aria-invalid={!!fieldErrors[field]} aria-describedby={fieldErrors[field] ? "error-" + field : undefined} disabled={saving} />}
+                  <textarea id={"player-" + field} rows={5} maxLength={profileFieldLimits.bio} value={draft[field]} onChange={event => setField(field, event.target.value)} aria-invalid={!!fieldErrors[field]} aria-describedby={fieldErrors[field] ? "error-" + field : undefined} disabled={saving} />
+                  : <input id={"player-" + field} value={draft[field]} maxLength={profileFieldLimits[field]} required={field === "displayName"} onChange={event => setField(field, event.target.value)} aria-invalid={!!fieldErrors[field]} aria-describedby={fieldErrors[field] ? "error-" + field : undefined} disabled={saving} />}
                 {fieldErrors[field] && <p className="field-error" id={"error-" + field}>{fieldErrors[field]}</p>}
               </div>)}
               {error && <p className="field-error" role="alert">{error}</p>}

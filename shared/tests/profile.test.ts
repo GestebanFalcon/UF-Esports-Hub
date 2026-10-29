@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   profileRecordSchema,
+  profileResponseSchema,
   profileSchema,
   profileUpdateSchema,
   toProfile,
@@ -35,6 +36,21 @@ describe("player profile contracts", () => {
       expect(profileUpdateSchema.safeParse({ displayName: "Gator", [field]: "value" }).success).toBe(false);
     }
     expect(profileUpdateSchema.safeParse({}).success).toBe(false);
+  });
+
+  test("accepts partial updates and explicit clearing of nullable fields", () => {
+    expect(profileUpdateSchema.parse({ bio: null })).toEqual({ bio: null });
+    expect(profileUpdateSchema.parse({ favoriteGame: null })).toEqual({ favoriteGame: null });
+    expect(profileUpdateSchema.parse({ displayName: "New name" })).toEqual({ displayName: "New name" });
+  });
+
+  test("API responses use the public contract and omit account and ownership fields", () => {
+    expect(profileResponseSchema.parse({
+      ...record, email: "player@ufl.edu", hashedPassword: "secret", role: "admin",
+    })).toEqual(toProfile(record));
+    expect(profileResponseSchema.parse({ displayName: "Gator", favoriteGame: null, bio: null })).toEqual({
+      displayName: "Gator", favoriteGame: null, bio: null,
+    });
   });
 
   // make sure public profile data leaves out private database fields

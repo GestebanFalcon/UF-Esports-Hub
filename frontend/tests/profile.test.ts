@@ -11,11 +11,9 @@ const user = {
 };
 const loginResponse = { user, accessToken: "test-token", tokenType: "Bearer", expiresIn: 900 };
 const profile = {
-  userId: user.id,
   displayName: "Gator",
   favoriteGame: "Rocket League",
   bio: "Hi",
-  updatedAt: "2026-10-28T12:00:00Z",
 };
 
 async function signIn() {
@@ -35,7 +33,7 @@ describe("PBI-5 profile client validation", () => {
     expect(validateProfile({ displayName: "Player", favoriteGame: "Valorant", bio: "Hi" })).toEqual({});
   });
   test("requires a display name and enforces limits", () => {
-    const result = validateProfile({ displayName: " ", favoriteGame: "x".repeat(61), bio: "y".repeat(301) });
+    const result = validateProfile({ displayName: " ", favoriteGame: "x".repeat(61), bio: "y".repeat(501) });
     expect(result.displayName).toBeDefined();
     expect(result.favoriteGame).toBeDefined();
     expect(result.bio).toBeDefined();
@@ -44,10 +42,20 @@ describe("PBI-5 profile client validation", () => {
     const p = parseProfile({ userId: "11111111-1111-4111-8111-111111111111",
       displayName: "Gator", favoriteGame: "Rocket League", bio: "Hi",
       updatedAt: "2026-10-28T12:00:00Z", hashedPassword: "never expose" });
+    expect(p).toEqual(profile);
+    expect("userId" in p).toBe(false);
+    expect("updatedAt" in p).toBe(false);
     expect("hashedPassword" in p).toBe(false);
   });
   test("rejects malformed server payloads", () => {
     expect(() => parseProfile({ displayName: "No identity" })).toThrow(ProfileApiError);
+  });
+  test("accepts nullable profile fields and uses the shared database limits", () => {
+    expect(parseProfile({ displayName: "Gator", favoriteGame: null, bio: null })).toEqual({
+      displayName: "Gator", favoriteGame: null, bio: null,
+    });
+    expect(validateProfile({ displayName: "x".repeat(40), favoriteGame: "x".repeat(60), bio: "x".repeat(500) })).toEqual({});
+    expect(validateProfile({ displayName: "x".repeat(41), favoriteGame: "", bio: "" }).displayName).toBeDefined();
   });
 });
 

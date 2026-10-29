@@ -10,9 +10,9 @@ This branch replaces the localStorage preview with a server-backed client. The f
 - The shared header links to the profile; the duplicate profile shell and floating shortcut are removed.
 
 ## API integration
-- GET and PATCH `/api/me/profile`; provisional contract on `nicandro/pbi-6-profile-routes` (#27). Reconcile the temporary definition in `src/features/profile/api.ts` with the mounted endpoint contract when that endpoint is integrated. The current shared profile schema differs: display names allow 40 characters, bios allow 500, optional fields are nullable, and the public profile omits identity and timestamps.
-- Update payload: displayName (required 1–50), favoriteGame (0–60), bio (0–300). Discord has been removed because it is not in the current shared contract.
-- Response: userId, displayName, favoriteGame, bio, updatedAt. No account email, role or hash.
+- GET and PATCH `/api/me/profile`; the path, response schema, types, and field limits are imported from `@uf-esports-hub/shared`.
+- Update payload: displayName (required 1–40), favoriteGame (0–60), bio (0–500). The API accepts partial updates and nullable favoriteGame/bio; the editor submits all three fields as strings and normalizes loaded nulls to empty inputs.
+- Response: displayName, favoriteGame, bio. Identity, timestamps, account email, role, and hashes are excluded. Responses are validated with the shared schema.
 - API origin: `VITE_API_URL` if set; otherwise `http://localhost:3001`.
 - Requests use the current Bearer token from the auth client. Signed-out or expired sessions cannot send profile requests. A 401 clears the rejected session without clearing a newer session established while the request was in flight.
 
@@ -37,4 +37,4 @@ Once the profile endpoints are integrated, test the UI with an actual signed-in 
 5. Discard, Back/Forward, keyboard tab order, narrow mobile layout.
 
 ## Concurrent PRs
-The frontend integration updates `App.tsx` and the shared header. Backend, role schema, and shared exports are unchanged.
+The profile routes and frontend now share the database-aligned contract. The page and feature folder structure remains in place; the PostgreSQL profile store and application mount are still pending.
