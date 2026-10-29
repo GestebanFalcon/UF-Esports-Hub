@@ -15,6 +15,13 @@
       "when": 1793057637666,
       "tag": "0001_bouncy_sunset_bain",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793238490470,
+      "tag": "0002_lethal_obadiah_stane",
+      "breakpoints": true
     }
   ]
 }
