@@ -20,9 +20,13 @@ const user: User = userSchema.parse(await responseFromApi.json());
 
 `UserRecord` / `userRecordSchema` match the database row: timestamps are `Date` objects and `hashedPassword` is required. Use these internally; call `toUser` before sending a row to the frontend. Hashing stays in the backend authentication layer. These schemas validate data without changing username or email casing.
 
-`NewUser` remains inferred from Drizzle in the backend because database defaults make insert fields optional. Profile and membership fields can be added later. No database migration is required by this package.
+`NewUser` remains inferred from Drizzle in the backend because database defaults make insert fields optional. No database migration is required by this package.
 
 Run `bun run test` for validation and serialization tests. Schema APIs follow the [Zod documentation](https://zod.dev/api).
+
+## Player profile contracts
+
+`ProfileRecord` matches `player_profiles`: `userId` (UUID), required `displayName` (1–40 characters), nullable `favoriteGame` (up to 60) and `bio` (up to 500), and database `Date` timestamps. The three profile fields are public. `Profile` / `profileSchema` contain only those public fields, with nullable values represented as JSON `null`; `toProfile` excludes owner IDs and timestamps. `ProfileUpdate` / `profileUpdateSchema` accept only editable profile fields, reject unknown and protected account fields, and require at least one field. Empty favorite game and bio strings are allowed; send `null` to clear either value.
 
 ## Authentication contracts
 
