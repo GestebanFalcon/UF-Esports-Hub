@@ -5,12 +5,17 @@ import { Brand } from "./Brand";
 type SiteHeaderProps = { pathname: string; session: Session | null; onLogout: () => void };
 
 export function SiteHeader({ pathname, session, onLogout }: SiteHeaderProps) {
+  const isProfilePage = pathname === "/profile" || pathname === "/profile/edit";
+
   return (
     <header className="site-header">
       <Brand />
       <nav aria-label="Main navigation">
         <a className={pathname === "/" ? "nav-link active" : "nav-link"} href="/" aria-current={pathname === "/" ? "page" : undefined}>
           Home
+        </a>
+        <a className={isProfilePage ? "nav-link active" : "nav-link"} href="/profile" aria-current={isProfilePage ? "page" : undefined}>
+          Player profile
         </a>
         {session ? (
           <>

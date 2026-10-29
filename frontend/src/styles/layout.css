@@ -139,7 +139,7 @@ nav {
     width: 100%;
   }
 }
-@media (max-width: 480px) {
+@media (max-width: 900px) {
   .site-header {
     height: auto;
     padding-block: 20px 16px;
@@ -149,5 +149,7 @@ nav {
   .site-header nav {
     width: 100%;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
   }
 }
