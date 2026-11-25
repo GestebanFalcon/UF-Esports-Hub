@@ -1,9 +1,16 @@
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { describe, test } from 'node:test';
-import express, { type RequestHandler } from 'express';
-import { createProfileRouter, type ProfileStore } from '../src/routes/profile/index.js';
+import express from 'express';
+import { SignJWT } from 'jose';
+import type { ProfileStore } from '../src/routes/profile/index.js';
 import { profilePaths, type ProfileResponse } from '@uf-esports-hub/shared';
+
+process.env.JWT_SECRET = 'test-only-signing-secret-with-at-least-32-bytes';
+process.env.JWT_EXPIRES_IN_SECONDS = '900';
+const { createProfileRouter } = await import('../src/routes/profile/index.js');
+const { createAccessToken } = await import('../src/auth/tokens.js');
+const { authConfig } = await import('../src/auth/config.js');
 
 const ALICE = '11111111-1111-4111-8111-111111111111';
 const BOB = '22222222-2222-4222-8222-222222222222';
@@ -12,18 +19,11 @@ const fixture = (userId: string): ProfileResponse => ({
   favoriteGame: 'Valorant', bio: 'Player',
 });
 
-// Test-only authentication. The production middleware supplies the same userId local.
-const testAuthenticate: RequestHandler = (req, res, next) => {
-  const token = req.headers.authorization;
-  if (token === 'Bearer test-alice') res.locals.userId = ALICE;
-  else if (token === 'Bearer test-bob') res.locals.userId = BOB;
-  else { res.status(401).json({ message: 'Authentication required.' }); return; }
-  next();
-};
+const aliceToken = (await createAccessToken(ALICE)).accessToken;
+const bobToken = (await createAccessToken(BOB)).accessToken;
 
-async function setup({ initial = true, authenticate = testAuthenticate, store: providedStore }: {
+async function setup({ initial = true, store: providedStore }: {
   initial?: boolean;
-  authenticate?: RequestHandler;
   store?: ProfileStore;
 } = {}) {
   const records = new Map<string, ProfileResponse>();
@@ -40,13 +40,13 @@ async function setup({ initial = true, authenticate = testAuthenticate, store: p
   };
   const app = express();
   app.use(express.json());
-  app.use(profilePaths.self, createProfileRouter({ authenticate, store }));
+  app.use(profilePaths.self, createProfileRouter({ store }));
   const server = app.listen(0, '127.0.0.1');
   await once(server, 'listening');
   const address = server.address();
   assert.ok(address && typeof address !== 'string');
   const url = `http://127.0.0.1:${address.port}${profilePaths.self}`;
-  async function request(method: string, body?: unknown, token = 'test-alice') {
+  async function request(method: string, body?: unknown, token = aliceToken) {
     return fetch(url, {
       method,
       headers: {
@@ -73,7 +73,7 @@ describe('self profile endpoints', () => {
     assert.equal(alice.status, 200);
     assert.equal(alice.headers.get('cache-control'), 'no-store');
     assert.deepEqual(await alice.json(), fixture(ALICE));
-    const bob = await ctx.request('GET', undefined, 'test-bob');
+    const bob = await ctx.request('GET', undefined, bobToken);
     assert.equal(bob.status, 200);
     assert.deepEqual(await bob.json(), fixture(BOB));
   });
@@ -85,20 +85,23 @@ describe('self profile endpoints', () => {
     assert.equal((await ctx.request('PATCH', { displayName: 'X' }, 'invalid')).status, 401);
   });
 
-  test('does not read the store without a verified UUID in the auth local', async (t) => {
-    for (const userId of [undefined, 'invalid-user-id']) {
-      const store: ProfileStore = {
-        async getByUserId() { assert.fail('Unauthenticated read'); },
-        async updateByUserId() { assert.fail('Unauthenticated write'); },
-      };
-      const authenticate: RequestHandler = (_req, res, next) => {
-        res.locals.userId = userId;
-        next();
-      };
-      const ctx = await setup({ authenticate, store });
-      t.after(ctx.close);
-      assert.equal((await ctx.request('GET')).status, 401);
-      assert.equal((await ctx.request('PATCH', { bio: 'Update' })).status, 401);
+  test('invalid, expired, and invalid-subject tokens never reach the store', async (t) => {
+    const ctx = await setup({ store: {
+      async getByUserId() { assert.fail('Unauthenticated read'); },
+      async updateByUserId() { assert.fail('Unauthenticated write'); },
+    } });
+    t.after(ctx.close);
+    const now = Math.floor(Date.now() / 1000);
+    const sign = (subject: string, expiresAt: number) => new SignJWT({})
+      .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+      .setSubject(subject).setIssuer(authConfig.issuer).setAudience(authConfig.audience)
+      .setIssuedAt(now - 60).setExpirationTime(expiresAt).sign(authConfig.secret);
+    for (const token of ['', 'forged', await sign(ALICE, now - 1), await sign('invalid-user-id', now + 60)]) {
+      for (const method of ['GET', 'PATCH']) {
+        const response = await ctx.request(method, method === 'PATCH' ? { bio: 'Update' } : undefined, token);
+        assert.equal(response.status, 401);
+        assert.ok(response.headers.get('www-authenticate'));
+      }
     }
   });
 
@@ -176,17 +179,4 @@ describe('self profile endpoints', () => {
     assert.equal(errors.mock.callCount(), 2);
   });
 
-  test('uses the actual Bearer middleware without an identity adapter', async (t) => {
-    process.env.JWT_SECRET = 'test-only-signing-secret-with-at-least-32-bytes';
-    process.env.JWT_EXPIRES_IN_SECONDS = '900';
-    const { requireAuth } = await import('../src/middleware/require-auth.js');
-    const { createAccessToken } = await import('../src/auth/tokens.js');
-    const ctx = await setup({ authenticate: requireAuth });
-    t.after(ctx.close);
-    const { accessToken } = await createAccessToken(ALICE);
-    const response = await ctx.request('GET', undefined, accessToken);
-    assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), fixture(ALICE));
-    assert.equal((await ctx.request('GET', undefined, 'forged')).status, 401);
-  });
 });

@@ -2,11 +2,12 @@ import type { RequestHandler } from 'express';
 import { hash } from 'bcryptjs';
 import { sql } from 'drizzle-orm';
 import {
+  profileFieldLimits,
   registerRequestSchema,
   toUser
 } from '@uf-esports-hub/shared';
 import { db } from '../../db/index.js';
-import { users } from '../../db/schema.js';
+import { playerProfiles, users } from '../../db/schema.js';
 
 // Register a new user
 export const register: RequestHandler = async (req, res) => {
@@ -85,16 +86,19 @@ export const register: RequestHandler = async (req, res) => {
     // Hash the password before saving it
     const hashedPassword = await hash(password, 12);
 
-    // Save the new user to PostgreSQL
-    const [newUser] = await db
-      .insert(users)
-      .values({
-        username,
-        email,
-        hashedPassword,
-      })
-      .onConflictDoNothing()
-      .returning();
+    // Commit the account and its initial profile together.
+    const newUser = await db.transaction(async (tx) => {
+      const [created] = await tx.insert(users)
+        .values({ username, email, hashedPassword })
+        .onConflictDoNothing().returning();
+      if (!created) return undefined;
+
+      // Preserve whole Unicode characters when shortening the initial name.
+      const displayName = username.slice(0, profileFieldLimits.displayName)
+        .replace(/[\uD800-\uDBFF]$/, '');
+      await tx.insert(playerProfiles).values({ userId: created.id, displayName });
+      return created;
+    });
 
     // Handle duplicate registration requests
     if (!newUser) {

@@ -1,6 +1,6 @@
 # PBI-5 — account-linked player profile UI
 
-This branch replaces the localStorage preview with a server-backed client. The frontend uses the existing verified Bearer session. The profile API is **not mounted in the current backend**; persistence and end-to-end profile verification still depend on the profile endpoints being integrated.
+This branch replaces the localStorage preview with a server-backed client. The frontend uses the existing verified Bearer session. The profile API is mounted at `/api/me/profile` with PostgreSQL storage. Apply backend migrations before using it: they create the table and initialize profiles for existing users; registration creates profiles for new users.
 
 ## Frontend structure
 - `src/main.tsx` renders `App` only.
@@ -29,7 +29,7 @@ This branch replaces the localStorage preview with a server-backed client. The f
 ## Verification
 Run `cd frontend && bun run typecheck && bun run build && bun run test`. Profile validation and Bearer-session request tests are included in the normal frontend test suite under `tests/profile.test.ts`.
 
-Once the profile endpoints are integrated, test the UI with an actual signed-in user and test:
+After applying backend migrations, test the UI with an actual signed-in user and test:
 1. GET existing profile, refresh, log out/in, and verify saved details.
 2. PATCH valid data; GET confirms persistence.
 3. PATCH rejected fields; see errors without losing draft.
@@ -37,4 +37,4 @@ Once the profile endpoints are integrated, test the UI with an actual signed-in 
 5. Discard, Back/Forward, keyboard tab order, narrow mobile layout.
 
 ## Concurrent PRs
-The profile routes and frontend now share the database-aligned contract. The page and feature folder structure remains in place; the PostgreSQL profile store and application mount are still pending.
+The profile routes and frontend share the database-aligned contract and URL. The PostgreSQL store and application mount are present; database migrations must be applied before real profile requests can succeed.

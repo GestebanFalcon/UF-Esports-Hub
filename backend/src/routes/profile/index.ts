@@ -1,8 +1,9 @@
-import { Router, type RequestHandler } from 'express';
+import { Router } from 'express';
 import {
   profileResponseSchema, profileUpdateSchema, profilePaths,
   type ProfileResponse, type ProfileUpdate,
 } from '@uf-esports-hub/shared';
+import { requireAuth } from '../../middleware/require-auth.js';
 
 /**
  * Authentication middleware must verify a signed, unexpired session and
@@ -13,18 +14,12 @@ export interface ProfileStore {
   getByUserId(userId: string): Promise<ProfileResponse | null>;
   updateByUserId(userId: string, data: ProfileUpdate): Promise<ProfileResponse | null>;
 }
-export interface ProfileDependencies {
-  authenticate: RequestHandler;
-  store: ProfileStore;
-}
 
-/**
- * Route construction is intentionally dependency-injected. Do not mount until
- * a PostgreSQL ProfileStore is supplied alongside requireAuth.
- */
-export function createProfileRouter({ authenticate, store }: ProfileDependencies) {
+
+/** Authentication is required; persistence is supplied by the application. */
+export function createProfileRouter({ store }: { store: ProfileStore }) {
   const router = Router();
-  router.use(authenticate);
+  router.use(requireAuth);
   router.use((_, res, next) => {
     res.set('Cache-Control', 'no-store');
     const userId: unknown = res.locals.userId;

@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import { authRouter } from './routes/auth/index.js';
 import { handleError } from './middleware/error-handler.js';
+import { createProfileRouter, profilePaths } from './routes/profile/index.js';
+import { profileStore } from './routes/profile/store.js';
 
 export const app = express();
 
@@ -20,5 +22,6 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRouter);
+app.use(profilePaths.self, createProfileRouter({ store: profileStore }));
 
 app.use(handleError);

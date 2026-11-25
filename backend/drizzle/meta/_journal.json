@@ -15,6 +15,13 @@
       "when": 1793243808569,
       "tag": "0001_open_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795591921108,
+      "tag": "0002_backfill_player_profiles",
+      "breakpoints": true
     }
   ]
 }

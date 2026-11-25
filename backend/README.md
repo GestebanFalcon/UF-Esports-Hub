@@ -30,6 +30,8 @@ After changing `src/db/schema.ts`, run `bun run db:generate`, review the generat
 
 `player_profiles` stores at most one profile per user. Its `user_id` is both the primary key and a cascading foreign key to `users.id`, so profile ownership cannot be reassigned. `display_name` is required (1–40 characters); `favorite_game` (0–60) and `bio` (0–500) are nullable. All three are public profile fields. Email, role, password hashes, and account timestamps remain in `users` and are excluded from public profile serialization. Profile update contracts accept only display name, favorite game, and bio; unknown and account fields are rejected. Credentials stay in the separate authentication contract.
 
+Apply all migrations before starting the updated app. `0001_open_leader` creates the profile table; `0002_backfill_player_profiles` initializes missing profiles for existing users while preserving saved profiles. New registrations create the user and profile together in a transaction. Initial display names come from usernames, shortened to fit the shared limit; favorite game and bio start as null.
+
 ## Checks and production
 
 ```sh
@@ -53,8 +55,10 @@ JWTs use HS256, a user UUID in `sub`, unique token IDs, issued-at and expiry tim
 
 Protect future routes by mounting `requireAuth` from `src/middleware/require-auth.ts` before their handler. Read the verified UUID from `res.locals.userId` (typed with `AuthLocals`); apply account existence and resource permissions as needed, as `/me` does.
 
+GET and PATCH `/api/me/profile` use `createProfileRouter({ store: profileStore })`. The router runs `requireAuth` directly and the PostgreSQL store scopes both reads and updates to the verified user ID. PATCH accepts partial updates and never creates a missing profile. See [profile integration](src/routes/profile/INTEGRATION.md).
+
 Registration allows 50 requests per IP per hour, counting successes and failures. Login allows 10 failed requests per IP/email pair per 15 minutes; email casing does not create a new quota, and successful logins do not consume the failure quota. A separate ceiling of 300 total login requests per IP per 15 minutes limits requests across different emails and includes successes. The quotas are independent, so registration traffic does not consume login allowances and one email's failures do not exhaust another email's failure quota. Limits return JSON `429` and `Retry-After`. IPv6 addresses are grouped into /56 subnets, following the library's default policy. The default rate-limit stores are in memory per server process. For multiple instances, configure shared stores; behind a reverse proxy, configure Express `trust proxy` for the actual trusted proxy topology before relying on client IP limits. Use HTTPS in deployment.
 
 The frontend and server use **email/password**. The frontend calls the login API, validates `accessToken`, `tokenType`, and `expiresIn`, and verifies saved sessions with `/me`. See [frontend authentication](../frontend/README.md) and [deferred considerations](../shared/docs/deferred-considerations.md).
 
-`bun run test` runs HTTP tests against the real Express app, bcrypt, and JWT implementation, with stubbed database queries and test-only configuration. It covers registration-to-login, public serialization, credential failures, validation, expired/forged tokens, protected routes, rate limiting, and configuration. It does not require or connect to PostgreSQL. No database migration is needed for this change.
+`bun run test` runs HTTP tests against the real Express app, bcrypt, and JWT implementation, with stubbed database queries and test-only configuration. It covers account/profile registration, public serialization, credential failures, validation, expired/forged tokens, mounted profile routes and ownership filters, rate limiting, and configuration. It does not require or connect to PostgreSQL. Apply the migrations before checking real persistence through the running app.

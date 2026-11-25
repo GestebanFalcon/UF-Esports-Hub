@@ -8,6 +8,7 @@ import { SignJWT, decodeJwt } from 'jose';
 import { PgDialect } from 'drizzle-orm/pg-core';
 import express from 'express';
 import { loginResponseSchema } from '@uf-esports-hub/shared';
+import { playerProfiles, users } from '../src/db/schema.js';
 
 // Tests exercise the HTTP API with a stubbed database, never a developer database.
 process.env.DATABASE_URL = 'postgresql://unused:unused@localhost/unused';
@@ -146,12 +147,23 @@ test('email login issues a signed, expiring bearer token and /me returns the pub
 test('registration still hashes passwords and the new account can log in', async () => {
   rows = [];
   let stored: typeof user | undefined;
-  mock.method(db, 'insert', (() => ({
-    values: (values: Pick<typeof user, 'username' | 'email' | 'hashedPassword'>) => {
-      stored = { ...user, ...values };
-      return { onConflictDoNothing: () => ({ returning: async () => [stored] }) };
+  let storedProfile: unknown;
+  type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+  const transaction = {
+    insert(table: unknown) {
+      if (table === users) return {
+        values(values: Pick<typeof user, 'username' | 'email' | 'hashedPassword'>) {
+          stored = { ...user, ...values };
+          return { onConflictDoNothing: () => ({ returning: async () => [stored] }) };
+        },
+      };
+      assert.equal(table, playerProfiles);
+      return { async values(values: unknown) { storedProfile = values; } };
     },
-  })) as unknown as typeof db.insert);
+  };
+  mock.method(db, 'transaction', (async (work: (tx: Transaction) => Promise<unknown>) => {
+    return work(transaction as unknown as Transaction);
+  }) as typeof db.transaction);
   const response = await fetch(`${baseUrl}/api/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -162,8 +174,22 @@ test('registration still hashes passwords and the new account can log in', async
   assert.ok(stored);
   assert.notEqual(stored.hashedPassword, password);
   assert.ok(await compare(password, stored.hashedPassword));
+  assert.deepEqual(storedProfile, { userId: stored.id, displayName: 'Gator' });
   rows = [stored];
   assert.equal((await login()).status, 200);
+});
+
+test('registration returns a failure if the account/profile transaction fails', async () => {
+  rows = [];
+  const errors = mock.method(console, 'error', () => {});
+  mock.method(db, 'transaction', async () => { throw new Error('profile write failed'); });
+  const response = await fetch(`${baseUrl}/api/auth/register`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: 'Gator', email: user.email, password }),
+  });
+  assert.equal(response.status, 500);
+  assert.deepEqual(await response.json(), { message: 'Unable to create account right now.' });
+  assert.equal(errors.mock.callCount(), 1);
 });
 
 test('unknown emails and incorrect passwords return the same 401 response', async () => {

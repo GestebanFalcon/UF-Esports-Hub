@@ -9,7 +9,7 @@ const migration = readFileSync(
 const snapshot = JSON.parse(readFileSync(
   new URL('../drizzle/meta/0001_snapshot.json', import.meta.url),
   'utf8',
-)) as { prevId: string; enums: Record<string, unknown> };
+)) as { id: string; prevId: string; enums: Record<string, unknown> };
 const baseSnapshot = JSON.parse(readFileSync(
   new URL('../drizzle/meta/0000_snapshot.json', import.meta.url),
   'utf8',
@@ -33,9 +33,15 @@ test('profile migration enforces one user-owned profile and field storage limits
 test('profile migration metadata follows the existing users snapshot', () => {
   assert.equal(snapshot.prevId, baseSnapshot.id);
   assert.deepEqual(snapshot.enums, {});
-  assert.equal(journal.entries.length, 2);
+  assert.equal(journal.entries.length, 3);
   assert.equal(journal.entries[0]?.idx, 0);
   assert.equal(journal.entries[0]?.tag, '0000_initial_users');
   assert.equal(journal.entries[1]?.idx, 1);
   assert.equal(journal.entries[1]?.tag, '0001_open_leader');
+  assert.equal(journal.entries[2]?.idx, 2);
+  assert.equal(journal.entries[2]?.tag, '0002_backfill_player_profiles');
+  const backfillSnapshot = JSON.parse(readFileSync(
+    new URL('../drizzle/meta/0002_snapshot.json', import.meta.url), 'utf8',
+  )) as { prevId: string };
+  assert.equal(backfillSnapshot.prevId, snapshot.id);
 });
