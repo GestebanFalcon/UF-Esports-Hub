@@ -15,3 +15,7 @@ Vite React TS project - build using bun run build
 
 **Backend**
 Express TS project
+
+## Contributing
+
+Read [the code conventions](CONTRIBUTING.md) before making changes. They cover shared contracts, public serialization, project structure, readable code, and verification. Setup instructions live in the [shared](shared/README.md), [backend](backend/README.md), and [frontend](frontend/README.md) READMEs.

@@ -2,6 +2,8 @@
 
 Express + TypeScript API with Drizzle ORM and PostgreSQL. Dependencies are managed with Bun; Node.js 22+ runs the built server.
 
+Follow the repository's [code conventions](../CONTRIBUTING.md), including [backend and database guidance](../CONTRIBUTING.md#backend-and-database).
+
 ## Setup
 
 ```sh
@@ -31,6 +33,12 @@ After changing `src/db/schema.ts`, run `bun run db:generate`, review the generat
 `player_profiles` stores at most one profile per user. Its `user_id` is both the primary key and a cascading foreign key to `users.id`, so profile ownership cannot be reassigned. `display_name` is required (1–40 characters); `favorite_game` (0–60) and `bio` (0–500) are nullable. All three are public profile fields. Email, role, password hashes, and account timestamps remain in `users` and are excluded from public profile serialization. Profile update contracts accept only display name, favorite game, and bio; unknown and account fields are rejected. Credentials stay in the separate authentication contract.
 
 Apply all migrations before starting the updated app. `0001_open_leader` creates the profile table; `0002_backfill_player_profiles` initializes missing profiles for existing users while preserving saved profiles. New registrations create the user and profile together in a transaction. Initial display names come from usernames, shortened to fit the shared limit; favorite game and bio start as null.
+
+## Teams (PBI 7)
+
+`teams` stores UUID identity, name, game, description, owner UUID (`manager_id`), and timestamps. `team_memberships` links teams to users with a composite primary key that prevents duplicate roster entries. Migration `0003_team_schemas` adds these tables. The development fixture is `seeds/teams.sql` and is optional after migration.
+
+See [team data and API conventions](../shared/docs/teams.md) for field limits, uniqueness/deletion rules, shared contracts, fixture usage, and proposed `/api/teams` routes. Ownership remains independent of global roles; team endpoints and role enforcement are separate integration work in #18. Backend tests run the migrations and relational checks on disposable in-memory PostgreSQL through the test-only PGlite dependency.
 
 ## Checks and production
 

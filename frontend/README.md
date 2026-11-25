@@ -2,6 +2,8 @@
 
 React frontend served and bundled with Bun. Dark blue and black theme with responsive layouts.
 
+Follow the repository's [code conventions](../CONTRIBUTING.md), including [frontend guidance](../CONTRIBUTING.md#frontend).
+
 ## Setup
 
 ```sh
