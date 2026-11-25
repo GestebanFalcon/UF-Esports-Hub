@@ -22,6 +22,13 @@
       "when": 1795591921108,
       "tag": "0002_backfill_player_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795643447133,
+      "tag": "0003_team_schemas",
+      "breakpoints": true
     }
   ]
 }

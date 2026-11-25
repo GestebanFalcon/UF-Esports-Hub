@@ -33,7 +33,7 @@ test('profile migration enforces one user-owned profile and field storage limits
 test('profile migration metadata follows the existing users snapshot', () => {
   assert.equal(snapshot.prevId, baseSnapshot.id);
   assert.deepEqual(snapshot.enums, {});
-  assert.equal(journal.entries.length, 3);
+  assert.ok(journal.entries.length >= 3);
   assert.equal(journal.entries[0]?.idx, 0);
   assert.equal(journal.entries[0]?.tag, '0000_initial_users');
   assert.equal(journal.entries[1]?.idx, 1);

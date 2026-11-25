@@ -12,6 +12,36 @@ export {
 } from "./profile.js";
 export type { Profile, ProfileUpdate, ProfileRecord, ProfileResponse } from "./profile.js";
 export {
+  teamSchema,
+  teamCreateSchema,
+  teamUpdateSchema,
+  teamRecordSchema,
+  teamMembershipRecordSchema,
+  teamRosterMemberSchema,
+  teamFieldLimits,
+  teamPaths,
+  teamResponseSchema,
+  teamListSchema,
+  teamRosterSchema,
+  teamParamsSchema,
+  teamErrorSchema,
+  toTeam,
+  toTeamRosterMember,
+} from "./team.js";
+export type {
+  Team,
+  TeamCreate,
+  TeamUpdate,
+  TeamRecord,
+  TeamMembershipRecord,
+  TeamRosterMember,
+  TeamResponse,
+  TeamList,
+  TeamRoster,
+  TeamParams,
+  TeamError,
+} from "./team.js";
+export {
   registerSchema,
   registerRequestSchema,
   registerResponseSchema,
