@@ -1,7 +1,9 @@
 import { sql } from 'drizzle-orm';
+import { matchFieldLimits, type MatchStatus } from '@uf-esports-hub/shared';
 import {
   check,
   index,
+  integer,
   pgTable,
   primaryKey,
   text,
@@ -71,6 +73,38 @@ export const teamMemberships = pgTable('team_memberships', {
   index('team_memberships_player_id_idx').on(table.playerId),
 ]);
 
+// Each fixture belongs to one managed team, including fixtures against external opponents.
+export const matches = pgTable('matches', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  teamId: uuid('team_id').notNull().references(() => teams.id, { onDelete: 'restrict' }),
+  opponent: varchar('opponent', { length: matchFieldLimits.opponent }).notNull(),
+  scheduledAt: timestamp('scheduled_at', { withTimezone: true }).notNull(),
+  location: varchar('location', { length: matchFieldLimits.location }).default('').notNull(),
+  notes: varchar('notes', { length: matchFieldLimits.notes }).default('').notNull(),
+  status: varchar('status', { length: 9 }).$type<MatchStatus>()
+    .default('scheduled').notNull(),
+  teamScore: integer('team_score'),
+  opponentScore: integer('opponent_score'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => new Date()),
+}, (table) => [
+  index('matches_scheduled_at_id_idx').on(table.scheduledAt, table.id),
+  index('matches_team_id_scheduled_at_id_idx').on(table.teamId, table.scheduledAt, table.id),
+  check('matches_opponent_not_blank', sql`length(btrim(${table.opponent})) > 0`),
+  check('matches_scheduled_at_finite', sql`isfinite(${table.scheduledAt})`),
+  check('matches_status_valid', sql`${table.status} IN ('scheduled', 'completed', 'cancelled')`),
+  check('matches_team_score_nonnegative', sql`${table.teamScore} >= 0`),
+  check('matches_opponent_score_nonnegative', sql`${table.opponentScore} >= 0`),
+  check('matches_result_state', sql`(
+    ${table.status} = 'completed' AND ${table.teamScore} IS NOT NULL AND ${table.opponentScore} IS NOT NULL
+  ) OR (
+    ${table.status} IN ('scheduled', 'cancelled') AND ${table.teamScore} IS NULL AND ${table.opponentScore} IS NULL
+  )`),
+]);
+
 export type { User, UserRecord } from '@uf-esports-hub/shared';
 export type DatabaseUser = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -78,3 +112,5 @@ export type DatabaseTeam = typeof teams.$inferSelect;
 export type NewTeam = typeof teams.$inferInsert;
 export type DatabaseTeamMembership = typeof teamMemberships.$inferSelect;
 export type NewTeamMembership = typeof teamMemberships.$inferInsert;
+export type DatabaseMatch = typeof matches.$inferSelect;
+export type NewMatch = typeof matches.$inferInsert;

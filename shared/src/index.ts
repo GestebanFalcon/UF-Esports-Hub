@@ -42,6 +42,38 @@ export type {
   TeamError,
 } from "./team.js";
 export {
+  matchSchema,
+  matchCreateSchema,
+  matchUpdateSchema,
+  matchRecordSchema,
+  matchStatusSchema,
+  matchResultSchema,
+  matchResultUpdateSchema,
+  matchFieldLimits,
+  matchListMaxDays,
+  matchPaths,
+  matchResponseSchema,
+  matchListSchema,
+  matchListQuerySchema,
+  matchParamsSchema,
+  matchErrorSchema,
+  toMatch,
+} from "./match.js";
+export type {
+  Match,
+  MatchCreate,
+  MatchUpdate,
+  MatchRecord,
+  MatchStatus,
+  MatchResult,
+  MatchResultUpdate,
+  MatchResponse,
+  MatchList,
+  MatchListQuery,
+  MatchParams,
+  MatchError,
+} from "./match.js";
+export {
   registerSchema,
   registerRequestSchema,
   registerResponseSchema,

@@ -29,6 +29,13 @@
       "when": 1795643447133,
       "tag": "0003_team_schemas",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795772995462,
+      "tag": "0004_match_schemas",
+      "breakpoints": true
     }
   ]
 }

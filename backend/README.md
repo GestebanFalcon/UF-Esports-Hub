@@ -40,6 +40,12 @@ Apply all migrations before starting the updated app. `0001_open_leader` creates
 
 See [team data and API conventions](../shared/docs/teams.md) for field limits, uniqueness/deletion rules, shared contracts, fixture usage, and proposed `/api/teams` routes. Ownership remains independent of global roles; team endpoints and role enforcement are separate integration work in #18. Backend tests run the migrations and relational checks on disposable in-memory PostgreSQL through the test-only PGlite dependency.
 
+## Matches (PBI 11)
+
+`matches` links one team to a named opponent and stores scheduling fields, status, and a nullable score pair. Completed matches require both scores; scheduled and cancelled matches forbid scores. Migration `0004_match_schemas` adds the table, calendar indexes, and database checks. A referenced team cannot be deleted until its matches are explicitly removed. Ownership follows the team's current manager.
+
+See [match data and API conventions](../shared/docs/matches.md) for the single-table decision, shared contracts, lifecycle, calendar windows, permissions, and proposed routes. HTTP scheduling and result endpoints are separate work in #35 and #36; they are not mounted yet. Migration tests use disposable PGlite databases and do not touch the configured development database.
+
 ## Checks and production
 
 ```sh

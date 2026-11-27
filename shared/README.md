@@ -32,6 +32,12 @@ Run `bun run test` for validation and serialization tests. Schema APIs follow th
 
 Contracts live in `src/team.ts`, following the user and profile modules. `teamResponseSchema` uses the same public shape as `teamSchema`. Roster responses contain only player IDs and display names. See [team data and route conventions](docs/teams.md) for relationships, field limits, ownership/membership rules, `/api/teams` paths, migration, and seed examples. HTTP routes are implemented separately in #18.
 
+## Match contracts
+
+`Match` / `matchSchema` describe a scheduled, completed, or cancelled fixture for one team against a named opponent. `scheduledAt` is a public ISO UTC string; `result` is null until completion, then contains both nonnegative integer scores. `MatchRecord` uses internal `Date` timestamps and flat nullable score columns; `toMatch` selects public fields and serializes the scheduling instant.
+
+`matchCreateSchema` and `matchUpdateSchema` accept scheduling fields; `matchResultUpdateSchema` replaces both scores independently. Strict writes reject protected fields. `matchPaths`, UUID parameters, calendar queries, list responses, limits, and errors are exported from `src/match.ts`. See [match data and route conventions](docs/matches.md) for the single-table decision, lifecycle, permissions, deletion rules, and proposed endpoints for #34–#36. Match routes and pages are separate work.
+
 ## Player profile contracts
 
 `ProfileRecord` matches `player_profiles`: `userId` (UUID), required `displayName` (1–40 characters), nullable `favoriteGame` (up to 60) and `bio` (up to 500), and database `Date` timestamps. The three profile fields are public. `Profile` / `profileSchema` contain only those public fields, with nullable values represented as JSON `null`; `toProfile` excludes owner IDs and timestamps. `ProfileUpdate` / `profileUpdateSchema` accept only editable profile fields, reject unknown and protected account fields, and require at least one field. Empty favorite game and bio strings are allowed; send `null` to clear either value.
