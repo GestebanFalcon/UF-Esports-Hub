@@ -1,6 +1,6 @@
 
 [serve.static]
-plugins = ["bun-plugin-tailwind"]
+plugins = ["bun-plugin-tailwind", "./scripts/api-origin-plugin.ts"]
 env = "BUN_PUBLIC_*"
 
 [test]

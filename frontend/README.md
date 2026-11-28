@@ -17,6 +17,20 @@ bun run dev
 
 Open http://localhost:5173 (override with `PORT` if needed). `bun run build` creates the production bundle; `bun run start` runs the Bun server in production mode. Dev, start, and build scripts rebuild shared first.
 
+## API configuration
+
+All frontend API clients use `src/config/api.ts`. Set `BUN_PUBLIC_API_ORIGIN` to the backend origin; it defaults to `http://localhost:3001`. Use an origin without an `/api` suffix. Surrounding whitespace and trailing slashes are removed.
+
+For example, copy `.env.example` to `.env` in `frontend` and set:
+
+```dotenv
+BUN_PUBLIC_API_ORIGIN=https://api.example.com
+```
+
+Authentication derives `AUTH_API_URL` from that origin. Other features use `apiUrl()` with their shared paths, such as `apiUrl(profilePaths.self)` or, when team requests are integrated, `apiUrl(teamPaths.list)`.
+
+Bun [embeds public configuration during bundling](https://bun.com/docs/bundler/html-static#inline-environment-variables). `scripts/api-origin-plugin.ts` supplies the resolved origin, including the default when the variable is unset, to both the Bun server and production build. Restart `bun run dev` or `bun run start` after changing the value; rebuild `dist/` when using static hosting. Replace any previous `VITE_API_URL` setting with `BUN_PUBLIC_API_ORIGIN`.
+
 ## Project structure
 
 ```text
@@ -24,7 +38,7 @@ src/
   app/App.tsx             Route selection and app composition
   components/layout/      Shared header, footer, and brand
   components/ui/          Reusable UI elements
-  config/api.ts           Backend authentication API origin
+  config/api.ts           Shared backend API origin and URL builder
   features/auth/
     components/           Authentication form, fields, and intro
     api.ts                Registration requests and API error handling
@@ -41,12 +55,14 @@ src/
   index.html              HTML entry point
   main.tsx                Browser entry point
   server.ts               Bun development/production server
-scripts/build.ts          Production bundling
+scripts/
+  build.ts                Production bundling
+  api-origin-plugin.ts    API origin injection for server and static bundles
 tests/
   setup.ts                DOM registration and React cleanup, preloaded by bunfig.toml
   app.test.tsx            Route, navigation, session, and logout regression tests
   teams/                  Team presentation, validation, and interaction tests
-  *.test.ts               Authentication, registration, and profile API tests
+  *.test.ts               API configuration, authentication, registration, and profile tests
 ```
 
 Keep `App.tsx` focused on composing pages and the site layout. Pages assemble feature components; authentication request and session logic belongs in `features/auth`, and shared controls belong in `components`. Put style changes and responsive rules in the corresponding stylesheet. Shared API contracts and validation remain in `../shared`.
@@ -70,7 +86,7 @@ Team navigation and pages are integrated into `src/app/App.tsx`, including trail
 
 The creation form uses `TeamCreate`, `teamCreateSchema`, and `teamFieldLimits` from the shared package, including the 100/80/500-character limits and trimmed write values. Its hook prevents duplicate submissions, preserves drafts on failure, displays field and status errors, and requires a valid UUID from the creation handler before navigating. The callback receives the shared create payload and returns a team ID; future HTTP integration must validate the full response with `teamResponseSchema` and obtain permissions from trusted server data.
 
-Registration calls `POST http://localhost:3001/api/auth/register`; login calls `/api/auth/login` on the same backend. Both forms use shared Zod validation and display server messages and field errors. Successful registration directs the user to log in; successful login displays the signed-in account with a link home and a logout button in navigation.
+Registration calls `POST /api/auth/register`; login calls `/api/auth/login` on the configured backend origin. Both forms use shared Zod validation and display server messages and field errors. Successful registration directs the user to log in; successful login displays the signed-in account with a link home and a logout button in navigation.
 
 The authentication client validates login responses and keeps the Bearer token and its expiry in `sessionStorage` so sessions survive navigation and reloads within a tab. Passwords and user records are never persisted. If browser storage is unavailable, login works in memory until navigation or reload. On startup, `/api/auth/me` verifies saved credentials and loads the user before displaying a signed-in account. Expired or rejected tokens are cleared. Temporary verification failures display a message and preserve saved credentials for a reload retry.
 

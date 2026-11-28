@@ -4,6 +4,7 @@ import {
   profileResponseSchema,
   type ProfileResponse,
 } from "@uf-esports-hub/shared";
+import { apiUrl } from "../../config/api";
 import { authClient } from "../auth/client";
 
 /** Never treat browser-local values as persisted profile data. */
@@ -19,7 +20,6 @@ export class ProfileApiError extends Error {
     super(message);
   }
 }
-const apiBase = (import.meta.env?.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ?? "http://localhost:3001";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -47,7 +47,7 @@ async function requestProfile(method: "GET" | "PATCH", edits?: ProfileEdits, sig
   }
   let response: Response;
   try {
-    response = await fetch(`${apiBase}${profilePath}`, {
+    response = await fetch(apiUrl(profilePath), {
       method, signal,
       headers: {
         Accept: "application/json",

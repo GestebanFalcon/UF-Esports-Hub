@@ -3,6 +3,7 @@ import { rm } from "node:fs/promises";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import tailwind from "bun-plugin-tailwind";
+import apiOrigin from "./api-origin-plugin";
 
 const { values } = parseArgs({
   args: Bun.argv.slice(2),
@@ -23,7 +24,7 @@ await rm(outdir, { recursive: true, force: true });
 const result = await Bun.build({
   entrypoints: [path.resolve("src/index.html")],
   outdir,
-  plugins: [tailwind],
+  plugins: [tailwind, apiOrigin],
   minify: true,
   target: "browser",
   sourcemap: "linked",

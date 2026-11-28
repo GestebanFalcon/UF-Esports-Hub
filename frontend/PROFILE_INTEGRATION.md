@@ -13,7 +13,7 @@ This branch replaces the localStorage preview with a server-backed client. The f
 - GET and PATCH `/api/me/profile`; the path, response schema, types, and field limits are imported from `@uf-esports-hub/shared`.
 - Update payload: displayName (required 1–40), favoriteGame (0–60), bio (0–500). The API accepts partial updates and nullable favoriteGame/bio; the editor submits all three fields as strings and normalizes loaded nulls to empty inputs.
 - Response: displayName, favoriteGame, bio. Identity, timestamps, account email, role, and hashes are excluded. Responses are validated with the shared schema.
-- API origin: `VITE_API_URL` if set; otherwise `http://localhost:3001`.
+- API origin: the central `src/config/api.ts` configuration shared with authentication; see [API configuration](README.md#api-configuration).
 - Requests use the current Bearer token from the auth client. Signed-out or expired sessions cannot send profile requests. A 401 clears the rejected session without clearing a newer session established while the request was in flight.
 
 ## States

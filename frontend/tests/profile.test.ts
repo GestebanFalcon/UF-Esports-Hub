@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
+import { profilePaths } from "@uf-esports-hub/shared";
+import { apiUrl } from "../src/config/api";
 import { authClient } from "../src/features/auth/client";
 import { getMyProfile, parseProfile, ProfileApiError, saveMyProfile, validateProfile } from "../src/features/profile/api";
 
@@ -65,7 +67,7 @@ describe("profile session integration", () => {
     request.mockResolvedValue(Response.json(profile));
     expect(await getMyProfile()).toEqual(profile);
     const [url, init] = request.mock.calls[0]!;
-    expect(String(url)).toEndWith("/api/me/profile");
+    expect(String(url)).toBe(apiUrl(profilePaths.self));
     expect(init?.method).toBe("GET");
     expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer test-token");
     expect(init?.credentials).toBeUndefined();
@@ -73,7 +75,8 @@ describe("profile session integration", () => {
     const edits = { displayName: "New Gator", favoriteGame: "Valorant", bio: "Updated" };
     request.mockResolvedValue(Response.json({ ...profile, ...edits }));
     expect(await saveMyProfile(edits)).toEqual({ ...profile, ...edits });
-    const [, patch] = request.mock.calls[1]!;
+    const [patchUrl, patch] = request.mock.calls[1]!;
+    expect(String(patchUrl)).toBe(apiUrl(profilePaths.self));
     expect(patch?.method).toBe("PATCH");
     expect(new Headers(patch?.headers).get("Authorization")).toBe("Bearer test-token");
     expect(new Headers(patch?.headers).get("Content-Type")).toBe("application/json");

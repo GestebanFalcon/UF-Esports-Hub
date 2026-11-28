@@ -12,7 +12,7 @@ For now, the frontend displays the backend's password field error. No password v
 
 ## Authentication follow-ups
 
-- API configuration: frontend requests currently target `http://localhost:3001`, and backend CORS allows `http://localhost:5173`. Configure the API origin and allowed frontend origins for deployment.
+- Allowed frontend origins: backend CORS currently allows `http://localhost:5173`; configure allowed origins for deployment. The API origin used by frontend clients is configurable; see [frontend API configuration](../../frontend/README.md#api-configuration).
 - Session persistence: tokens are stored in `sessionStorage` for navigation and reloads within a tab, with an in-memory fallback if storage is unavailable. JavaScript can access this storage; consider HttpOnly, Secure cookies with the corresponding backend and CSRF changes for deployment. Passwords are never persisted.
 - Token renewal and revocation: the backend has no refresh or revocation endpoint. Expiration requires another login; logout clears the browser session but does not invalidate an already-issued token on the server.
 - Account destination: there is no dashboard yet. Successful login displays the signed-in account and a link home.
