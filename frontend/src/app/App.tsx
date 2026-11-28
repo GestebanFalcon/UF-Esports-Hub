@@ -6,6 +6,9 @@ import { AuthPage } from "../pages/AuthPage";
 import { HomePage } from "../pages/HomePage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { PlayerProfilePage } from "../pages/PlayerProfilePage";
+import { TeamCreatePage } from "../pages/TeamCreatePage";
+import { TeamDetailsPage } from "../pages/TeamDetailsPage";
+import { TeamsPage } from "../pages/TeamsPage";
 import "../styles/index.css";
 
 const currentPathname = () => window.location.pathname.replace(/\/+$/, "") || "/";
@@ -28,15 +31,40 @@ export function App() {
     setPathname(next);
   }
 
+  let page = <NotFoundPage />;
+  if (isAuthPage) {
+    page = (
+      <AuthPage
+        key={pathname}
+        mode={pathname === "/login" ? "login" : "register"}
+        session={session}
+        ready={ready}
+      />
+    );
+  } else if (isProfilePage) {
+    page = (
+      <PlayerProfilePage
+        session={session}
+        ready={ready}
+        editing={pathname === "/profile/edit"}
+        onNavigate={navigateProfile}
+      />
+    );
+  } else if (pathname === "/teams") {
+    page = <TeamsPage />;
+  } else if (pathname === "/teams/create") {
+    page = <TeamCreatePage />;
+  } else if (/^\/teams\/[^/]+$/.test(pathname)) {
+    page = <TeamDetailsPage />;
+  } else if (pathname === "/") {
+    page = <HomePage />;
+  }
+
   return (
     <div className="site-shell">
       <SiteHeader pathname={pathname} session={session} onLogout={logout} />
       {notice && <p className="session-notice" role="status">{notice}</p>}
-      {isAuthPage ? (
-        <AuthPage key={pathname} mode={pathname === "/login" ? "login" : "register"} session={session} ready={ready} />
-      ) : isProfilePage ? (
-        <PlayerProfilePage session={session} ready={ready} editing={pathname === "/profile/edit"} onNavigate={navigateProfile} />
-      ) : pathname === "/" ? <HomePage /> : <NotFoundPage />}
+      {page}
       <SiteFooter />
     </div>
   );

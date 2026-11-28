@@ -6,6 +6,7 @@ type SiteHeaderProps = { pathname: string; session: Session | null; onLogout: ()
 
 export function SiteHeader({ pathname, session, onLogout }: SiteHeaderProps) {
   const isProfilePage = pathname === "/profile" || pathname === "/profile/edit";
+  const isTeamsPage = pathname === "/teams" || pathname.startsWith("/teams/");
 
   return (
     <header className="site-header">
@@ -13,6 +14,9 @@ export function SiteHeader({ pathname, session, onLogout }: SiteHeaderProps) {
       <nav aria-label="Main navigation">
         <a className={pathname === "/" ? "nav-link active" : "nav-link"} href="/" aria-current={pathname === "/" ? "page" : undefined}>
           Home
+        </a>
+        <a className={isTeamsPage ? "nav-link active" : "nav-link"} href="/teams" aria-current={isTeamsPage ? "page" : undefined}>
+          Teams
         </a>
         <a className={isProfilePage ? "nav-link active" : "nav-link"} href="/profile" aria-current={isProfilePage ? "page" : undefined}>
           Player profile
